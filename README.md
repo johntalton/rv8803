@@ -13,4 +13,6 @@ Realtime Clock driver for the RV-8803
 
 Gratuitous link to [Adafruit](https://www.adafruit.com/product/6538)
 
+[Datasheet](https://www.microcrystal.com/fileadmin/Media/Products/RTC/App.Manual/RV-8803-C7_App-Manual.pdf)
+
 ## API
