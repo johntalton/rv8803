@@ -1,9 +1,23 @@
 
 /** @import { I2CBufferSource } from '@johntalton/and-other-delights' */
-/** @import { Time, Alarm, Offset, Timer, Control, Extension, Flags, EventControl} from './types.js' */
+/** @import { Time, Alarm, Offset, Timer, Control, Extension, Flags, EventControl, Capture } from './types.js' */
 
 export class Converter {
+	/**
+	 * @param {I2CBufferSource} buffer
+	 * @returns {Time}
+	 */
+	static toTimeHighRes(buffer) {
+		const u8 = ArrayBuffer.isView(buffer) ?
+			new Uint8Array(buffer.buffer, buffer.byteOffset) :
+			new Uint8Array(buffer)
 
+		const [
+			hundredths, seconds, minutes, hours,
+			weekday, date, month, year
+		] = u8
+
+	}
 
 	/**
 	 * @param {I2CBufferSource} buffer
@@ -15,7 +29,7 @@ export class Converter {
 			new Uint8Array(buffer)
 
 		const [
-			hundredths, seconds, minutes, hours,
+			seconds, minutes, hours,
 			weekday, date, month, year
 		] = u8
 
@@ -200,6 +214,16 @@ export class Converter {
 		const buffer = new Uint8Array()
 		// todo
 		return buffer
+	}
+
+	/**
+	 * @param {I2CBufferSource} buffer
+	 * @returns {Capture}
+	 */
+	static toCapture(buffer) {
+		const u8 = ArrayBuffer.isView(buffer) ?
+			new Uint8Array(buffer.buffer, buffer.byteOffset) :
+			new Uint8Array(buffer)
 	}
 
 }

@@ -2,7 +2,7 @@ import { Common } from './common.js'
 import { Converter } from './converter.js'
 
 /** @import { I2CAddressedBus } from '@johntalton/and-other-delights' */
-/** @import { Time, Alarm, Offset, Timer, Control, Extension, Flags, EventControl} from './types.js' */
+/** @import { Time, Alarm, Offset, Timer, Control, Extension, Flags, EventControl, Capture } from './types.js' */
 
 export class RV8803 {
 	/** @type {I2CAddressedBus} */
@@ -25,6 +25,7 @@ export class RV8803 {
 
 	/**
 	 * @param {Time} time
+	 * @returns {Promise<void>}
 	 */
 	async setTime(time) {
 		return Common.setTime(this.#bus, Converter.fromTime(time))
@@ -41,6 +42,7 @@ export class RV8803 {
 	/**
 	 * @param {Alarm} alarm
 	 * @param {number} user2
+	 * @returns {Promise<void>}
 	 */
 	async setAlarm(alarm, user2) {
 		return Common.setAlarm(this.#bus, Converter.fromAlarm(alarm, user2))
@@ -56,6 +58,7 @@ export class RV8803 {
 
 	/**
 	 * @param {Offset} offset
+	 * @returns {Promise<void>}
 	 */
 	async setOffset(offset) {
 		return Common.setOffset(this.#bus, Converter.fromOffset(offset))
@@ -71,6 +74,7 @@ export class RV8803 {
 
 	/**
 	 * @param {number} user8
+	 * @returns {Promise<void>}
 	 */
 	async setRAM(user8) {
 		return Common.setRAM(this.#bus, Converter.fromRAM(user8))
@@ -87,6 +91,7 @@ export class RV8803 {
 	/**
 	 * @param {Timer} timer
 	 * @param {number} user4
+	 * @returns {Promise<void>}
 	 */
 	async setTimer(timer, user4) {
 		return Common.setTimer(this.#bus, Converter.fromTimer(timer, user4))
@@ -102,6 +107,7 @@ export class RV8803 {
 
 	/**
 	 * @param {Control} control
+	 * @returns {Promise<void>}
 	 */
 	async setControl(control) {
 		return Common.setControl(this.#bus, Converter.fromControl(control))
@@ -117,6 +123,7 @@ export class RV8803 {
 
 	/**
 	 * @param {Extension} extension
+	 * @returns {Promise<void>}
 	 */
 	async setExtension(extension) {
 		return Common.setExtension(this.#bus, Converter.fromExtension(extension))
@@ -132,6 +139,7 @@ export class RV8803 {
 
 	/**
 	 * @param {Flags} flags
+	 * @returns {Promise<void>}
 	 */
 	async setFlags(flags) {
 		return Common.setFlags(this.#bus, Converter.fromFlags(flags))
@@ -147,8 +155,17 @@ export class RV8803 {
 
 	/**
 	 * @param {EventControl} eventControl
+	 * @returns {Promise<void>}
 	 */
 	async setEventControl(eventControl) {
 		return Common.setEventControl(this.#bus, Converter.fromEventControl(eventControl))
+	}
+
+	/**
+	 * @returns {Promise<Capture>}
+	 */
+	async getCapture() {
+		const buffer = await Common.getCapture(this.#bus)
+		return Converter.toCapture(buffer)
 	}
 }

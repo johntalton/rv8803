@@ -57,3 +57,10 @@ export const REGISTERS = {
 	//
 	EVENT_CONTROL: 0x2F,
 }
+
+
+export const HIGH_RES_TIME_BLOCK = { start: REGISTERS.ONE_HUNDREDTHS_SECONDS, length: 8 }
+export const TIME_BLOCK = { start: REGISTERS.SECONDS, length: 7 }
+export const ALARM_BLOCK = { start: REGISTERS.MINUTES_ALARM, length: 3 }
+export const TIMER_BLOCK = { start: REGISTERS.TIMER_COUNTER_0, length: 2 }
+export const CAPTURE_BLOCK = { start: REGISTERS.ONE_HUNDREDTHS_SECONDS_CP, length: 2 }

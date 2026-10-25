@@ -30,6 +30,9 @@
  * @typedef {Object} EventControl
  */
 
+/**
+ * @typedef {Object} Capture
+ */
 
 
 export {}
