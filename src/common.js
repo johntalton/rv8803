@@ -144,7 +144,7 @@ export class Common {
 	 * @param {I2CBufferSource} buffer
 	 * @returns {Promise<void>}
 	 */
-	static async setFlags(bus, buffer) {
+	static async clearFlags(bus, buffer) {
 		await bus.writeI2cBlock(REGISTERS.FLAGS_REGISTER, buffer)
 	}
 

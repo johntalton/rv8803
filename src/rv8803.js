@@ -2,7 +2,7 @@ import { Common } from './common.js'
 import { Converter } from './converter.js'
 
 /** @import { I2CAddressedBus } from '@johntalton/and-other-delights' */
-/** @import { Time, Alarm, Offset, Timer, Control, Extension, Flags, EventControl, Capture } from './types.js' */
+/** @import { Time, Alarm, Offset, Timer, Control, Extension, Flags, ClearFlags, EventControl, Capture } from './types.js' */
 
 export class RV8803 {
 	/** @type {I2CAddressedBus} */
@@ -20,7 +20,7 @@ export class RV8803 {
 	 */
 	async getTime() {
 		const buffer = await Common.getTime(this.#bus)
-		return Converter.toTime(buffer)
+		return Converter.decodeTime(buffer)
 	}
 
 	/**
@@ -28,7 +28,7 @@ export class RV8803 {
 	 * @returns {Promise<void>}
 	 */
 	async setTime(time) {
-		return Common.setTime(this.#bus, Converter.fromTime(time))
+		return Common.setTime(this.#bus, Converter.encodeTime(time))
 	}
 
 	/**
@@ -36,16 +36,15 @@ export class RV8803 {
 	 */
 	async getAlarm() {
 		const buffer = await Common.getAlarm(this.#bus)
-		return Converter.toAlarm(buffer)
+		return Converter.decodeAlarm(buffer)
 	}
 
 	/**
 	 * @param {Alarm} alarm
-	 * @param {number} user2
 	 * @returns {Promise<void>}
 	 */
-	async setAlarm(alarm, user2) {
-		return Common.setAlarm(this.#bus, Converter.fromAlarm(alarm, user2))
+	async setAlarm(alarm) {
+		return Common.setAlarm(this.#bus, Converter.encodeAlarm(alarm))
 	}
 
 	/**
@@ -53,7 +52,7 @@ export class RV8803 {
 	 */
 	async getOffset() {
 		const buffer = await Common.getOffset(this.#bus)
-		return Converter.toOffset(buffer)
+		return Converter.decodeOffset(buffer)
 	}
 
 	/**
@@ -61,7 +60,7 @@ export class RV8803 {
 	 * @returns {Promise<void>}
 	 */
 	async setOffset(offset) {
-		return Common.setOffset(this.#bus, Converter.fromOffset(offset))
+		return Common.setOffset(this.#bus, Converter.encodeOffset(offset))
 	}
 
 	/**
@@ -69,7 +68,7 @@ export class RV8803 {
 	 */
 	async getRAM() {
 		const buffer = await Common.getRAM(this.#bus)
-		return Converter.toRAM(buffer)
+		return Converter.decodeRAM(buffer)
 	}
 
 	/**
@@ -77,7 +76,7 @@ export class RV8803 {
 	 * @returns {Promise<void>}
 	 */
 	async setRAM(user8) {
-		return Common.setRAM(this.#bus, Converter.fromRAM(user8))
+		return Common.setRAM(this.#bus, Converter.encodeRAM(user8))
 	}
 
 	/**
@@ -85,7 +84,7 @@ export class RV8803 {
 	 */
 	async getTimer() {
 		const buffer = await Common.getTimer(this.#bus)
-		return Converter.toTimer(buffer)
+		return Converter.decodeTimer(buffer)
 	}
 
 	/**
@@ -94,7 +93,7 @@ export class RV8803 {
 	 * @returns {Promise<void>}
 	 */
 	async setTimer(timer, user4) {
-		return Common.setTimer(this.#bus, Converter.fromTimer(timer, user4))
+		return Common.setTimer(this.#bus, Converter.encodeTimer(timer, user4))
 	}
 
 	/**
@@ -102,7 +101,7 @@ export class RV8803 {
 	 */
 	async getControl() {
 		const buffer = await Common.getControl(this.#bus)
-		return Converter.toControl(buffer)
+		return Converter.decodeControl(buffer)
 	}
 
 	/**
@@ -110,7 +109,7 @@ export class RV8803 {
 	 * @returns {Promise<void>}
 	 */
 	async setControl(control) {
-		return Common.setControl(this.#bus, Converter.fromControl(control))
+		return Common.setControl(this.#bus, Converter.encodeControl(control))
 	}
 
 	/**
@@ -118,7 +117,7 @@ export class RV8803 {
 	 */
 	async getExtension() {
 		const buffer = await Common.getExtension(this.#bus)
-		return Converter.toExtension(buffer)
+		return Converter.decodeExtension(buffer)
 	}
 
 	/**
@@ -126,7 +125,7 @@ export class RV8803 {
 	 * @returns {Promise<void>}
 	 */
 	async setExtension(extension) {
-		return Common.setExtension(this.#bus, Converter.fromExtension(extension))
+		return Common.setExtension(this.#bus, Converter.encodeExtension(extension))
 	}
 
 	/**
@@ -134,15 +133,15 @@ export class RV8803 {
 	 */
 	async getFlags() {
 		const buffer = await Common.getFlags(this.#bus)
-		return Converter.toFlags(buffer)
+		return Converter.decodeFlags(buffer)
 	}
 
 	/**
-	 * @param {Flags} flags
+	 * @param {ClearFlags} flags
 	 * @returns {Promise<void>}
 	 */
-	async setFlags(flags) {
-		return Common.setFlags(this.#bus, Converter.fromFlags(flags))
+	async clearFlags(flags) {
+		return Common.clearFlags(this.#bus, Converter.encodeFlags(flags))
 	}
 
 	/**
@@ -150,7 +149,7 @@ export class RV8803 {
 	 */
 	async getEventControl() {
 		const buffer = await Common.getEventControl(this.#bus)
-		return Converter.toEventControl(buffer)
+		return Converter.decodeEventControl(buffer)
 	}
 
 	/**
@@ -158,7 +157,7 @@ export class RV8803 {
 	 * @returns {Promise<void>}
 	 */
 	async setEventControl(eventControl) {
-		return Common.setEventControl(this.#bus, Converter.fromEventControl(eventControl))
+		return Common.setEventControl(this.#bus, Converter.encodeEventControl(eventControl))
 	}
 
 	/**
@@ -166,6 +165,6 @@ export class RV8803 {
 	 */
 	async getCapture() {
 		const buffer = await Common.getCapture(this.#bus)
-		return Converter.toCapture(buffer)
+		return Converter.decodeCapture(buffer)
 	}
 }
