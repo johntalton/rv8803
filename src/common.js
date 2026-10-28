@@ -1,4 +1,11 @@
-import { ALARM_BLOCK, CAPTURE_BLOCK, HIGH_RES_TIME_BLOCK, REGISTERS, TIME_BLOCK, TIMER_BLOCK } from './defs.js'
+import {
+	ALARM_BLOCK,
+	CAPTURE_BLOCK,
+	HIGH_RES_TIME_BLOCK,
+	REGISTERS,
+	TIME_BLOCK,
+	TIMER_BLOCK
+} from './defs.js'
 
 /** @import { I2CAddressedBus, I2CBufferSource } from '@johntalton/and-other-delights' */
 
@@ -172,6 +179,4 @@ export class Common {
 	static async getCapture(bus) {
 		return bus.readI2cBlock(CAPTURE_BLOCK.start, CAPTURE_BLOCK.length)
 	}
-
-
 }

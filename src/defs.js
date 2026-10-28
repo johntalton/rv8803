@@ -1,6 +1,8 @@
 
 export const RV8803_DEFAULT_ADDRESS = 0x32
 
+export const DEFAULT_BASE_YEAR = 2000
+
 export const REGISTERS = {
 	SECONDS: 0x00,
 	MINUTES: 0x01,

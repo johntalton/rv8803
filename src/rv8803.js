@@ -1,5 +1,6 @@
 import { Common } from './common.js'
 import { Converter } from './converter.js'
+import { DEFAULT_BASE_YEAR } from './defs.js'
 
 /** @import { I2CAddressedBus } from '@johntalton/and-other-delights' */
 /** @import { Time, Alarm, Offset, Timer, Control, Extension, Flags, ClearFlags, EventControl, Capture } from './types.js' */
@@ -16,11 +17,21 @@ export class RV8803 {
 	}
 
 	/**
+	 * @param {number} [baseYear = DEFAULT_BASE_YEAR]
 	 * @returns {Promise<Time>}
 	 */
-	async getTime() {
+	async getTime(baseYear = DEFAULT_BASE_YEAR) {
 		const buffer = await Common.getTime(this.#bus)
-		return Converter.decodeTime(buffer)
+		return Converter.decodeTime(buffer, baseYear)
+	}
+
+	/**
+	 * @param {number} [baseYear = DEFAULT_BASE_YEAR]
+	 * @returns {Promise<Time>}
+	 */
+	async getTimeHighRes(baseYear = DEFAULT_BASE_YEAR) {
+		const buffer = await Common.getTimeHighRes(this.#bus)
+		return Converter.decodeTimeHighRes(buffer, baseYear)
 	}
 
 	/**
