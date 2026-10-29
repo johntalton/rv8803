@@ -18,10 +18,11 @@
   "scripts": {
     "lint": "biome check",
     "test": "node --test test/**/*.test.js",
-    "coverage": "c8 --src src --check-coverage --statements 50 --branches 50 --functions 50 --lines 50 -r lcovonly -r text node --test test/**/*.test.js"
+    "coverage": "c8 --src src --check-coverage --statements 99 --branches 70 --functions 100 --lines 99 -r lcovonly -r text node --test test/**/*.test.js"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.2",
+    "@types/node": "^26.6.6",
     "c8": "^12.0.0"
   },
   "dependencies": {

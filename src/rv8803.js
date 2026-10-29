@@ -36,18 +36,20 @@ export class RV8803 {
 
 	/**
 	 * @param {Time} time
+	 * @param {number} [ baseYear = DEFAULT_BASE_YEAR]
 	 * @returns {Promise<void>}
 	 */
-	async setTime(time) {
-		return Common.setTime(this.#bus, Converter.encodeTime(time))
+	async setTime(time, baseYear = DEFAULT_BASE_YEAR) {
+		return Common.setTime(this.#bus, Converter.encodeTime(time, baseYear))
 	}
 
 	/**
+	 * @param {boolean} useWeekday
 	 * @returns {Promise<Alarm>}
 	 */
-	async getAlarm() {
+	async getAlarm(useWeekday) {
 		const buffer = await Common.getAlarm(this.#bus)
-		return Converter.decodeAlarm(buffer)
+		return Converter.decodeAlarm(buffer, useWeekday)
 	}
 
 	/**
@@ -100,11 +102,10 @@ export class RV8803 {
 
 	/**
 	 * @param {Timer} timer
-	 * @param {number} user4
 	 * @returns {Promise<void>}
 	 */
-	async setTimer(timer, user4) {
-		return Common.setTimer(this.#bus, Converter.encodeTimer(timer, user4))
+	async setTimer(timer) {
+		return Common.setTimer(this.#bus, Converter.encodeTimer(timer))
 	}
 
 	/**

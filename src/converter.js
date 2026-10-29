@@ -1,16 +1,25 @@
 
 /** biome-ignore-all lint/style/noExcessiveLinesPerFile: does it all */
 import { BitSmush } from '@johntalton/bitsmush'
+import {
+	ALARM_BLOCK,
+	CAPTURE_BLOCK,
+	HIGH_RES_TIME_BLOCK,
+	TIME_BLOCK,
+	TIMER_BLOCK,
+} from './defs.js'
 
 /** @import { I2CBufferSource } from '@johntalton/and-other-delights' */
-/** @import { Time, Alarm, Offset, Timer, Control, Extension, Flags, ClearFlags, EventControl, Capture } from './types.js' */
+/** @import { Time, Alarm, Offset, Timer, Control, Extension, UpdateSelect, AlarmSelect, Flags, ClearFlags, EventControl, EventEdge, Capture } from './types.js' */
 /** @import { SmushMap } from '@johntalton/bitsmush' */
 
-//
-export const ALARM_ENABLE_MASK = 0b1000_0000
-export const ALARM_MINUTE_MASK = 0b0111_1111
-export const ALARM_HOUR_MASK = 0b0011_1111
+export const HUNDREDTHS_PER_MILLISECOND = 10
 
+export const MAX_4_BIT_TIMER_GP = 0x0F
+
+export const MAX_BCD_8 = 150 + 15
+
+//
 export const ALARM_WEEKDAY_MASK = 0b0111_1111
 export const ALARM_DATE_MASK = 0b0011_1111
 
@@ -26,44 +35,47 @@ export const TIMER_COUNTER_1_UPPER_MASK = 0x0F
 export const TIMER_COUNTER_1_GP_MASK = 0xF0
 
 //
-export const CONTROL_UIE_OFFSET = 5
-export const CONTROL_TIE_OFFSET = 4
-export const CONTROL_AIE_OFFSET = 3
-export const CONTROL_EIE_OFFSET = 2
-export const CONTROL_RESET_OFFSET = 0
+/** @type {SmushMap} */
+export const CONTROL_SMUSH_MAP = [ [ 5,1 ], [ 4,1 ], [ 3,1 ], [ 2,1 ], [ 0,1]]
 
 //
 /** @type {SmushMap} */
-export const EXTENSION_SMUSH_MAP = [ [ 7,1], [ 6,1 ], [ 5,1 ], [ 4,1 ], [ 3,2 ], [ 1,2 ] ]
-export const EXTENSION_PT_SELECT_WEEKDAY = 'weekday'
-export const EXTENSION_PT_SELECT_DATE = 'date'
+export const EXTENSION_SMUSH_MAP = [ [ 7,1 ], [ 6,1 ], [ 5,1 ], [ 4,1 ], [ 3,2 ], [ 1,2 ] ]
+export const EXTENSION_PT_SELECT_SECOND = 'second'
+export const EXTENSION_PT_SELECT_MINUTE = 'minute'
+
+/** @type {Map<UpdateSelect, number>} */
 export const EXTENSION_PERIODIC_TIMER_SELECT_N2V = new Map([
-	[ EXTENSION_PT_SELECT_WEEKDAY, 0  ],
-	[ EXTENSION_PT_SELECT_DATE, 1  ]
+	[ EXTENSION_PT_SELECT_SECOND, 0 ],
+	[ EXTENSION_PT_SELECT_MINUTE, 1 ]
 ])
 export const EXTENSION_PERIODIC_TIMER_SELECT_V2N = new Map(Array.from(EXTENSION_PERIODIC_TIMER_SELECT_N2V, ([key, value]) => [value, key]))
 
-export const EXTENSION_ALARM_SELECT_SECOND = 'second'
-export const EXTENSION_ALARM_SELECT_MINUTE = 'minute'
+export const EXTENSION_ALARM_SELECT_WEEKDAY = 'weekday'
+export const EXTENSION_ALARM_SELECT_DATE = 'date'
+/** @type {Map<AlarmSelect, number>} */
 export const EXTENSION_ALARM_SELECT_N2V = new Map([
-	[ EXTENSION_ALARM_SELECT_SECOND, 0 ],
-	[ EXTENSION_ALARM_SELECT_MINUTE, 1 ]
+	[ EXTENSION_ALARM_SELECT_WEEKDAY, 0 ],
+	[ EXTENSION_ALARM_SELECT_DATE, 1 ]
 ])
 export const EXTENSION_ALARM_SELECT_V2N = new Map(Array.from(EXTENSION_ALARM_SELECT_N2V, ([key, value]) => [value, key]))
 
 //
 /** @type {SmushMap} */
-export const FLAGS_SMUSH_MAP = [ [ 5,1 ], [ 4,1 ], [ 3,1 ], [ 2,1 ], [ 1,2 ], [ 0,1 ] ]
+export const FLAGS_SMUSH_MAP = [ [ 5,1 ], [ 4,1 ], [ 3,1 ], [ 2,1 ], [ 1,1 ], [ 0,1 ] ]
 
 //
 /** @type {SmushMap} */
 export const EVENT_CONTROL_SMUSH_MAP = [ [ 7,1 ], [ 6,1 ], [ 5,2 ], [ 0,1 ] ]
 export const EVENT_CONTROL_EDGE_LOW = 'low'
 export const EVENT_CONTROL_EDGE_HIGH = 'high'
+
+/** @type {Map<EventEdge, number>} */
 export const EVENT_CONTROL_EDGE_N2V = new Map([
 	[ EVENT_CONTROL_EDGE_LOW, 0 ],
 	[ EVENT_CONTROL_EDGE_HIGH, 1 ]
 ])
+/** @type {Map<number, EventEdge>} */
 export const EVENT_CONTROL_EDGE_V2N = new Map(Array.from(EVENT_CONTROL_EDGE_N2V, ([key, value]) => [value, key]))
 
 
@@ -82,6 +94,8 @@ export function decodeBCD(bcd) {
  * @returns {number}
  */
 export function encodeBCD(value) {
+	if(value < 0) { throw new RangeError('value must be positive') }
+	if(value > MAX_BCD_8) { throw new RangeError('exceeds max value') }
 	const tens = Math.floor(value / 10)
 	const units = value - (tens * 10)
 	return (tens << 4) | units
@@ -89,8 +103,10 @@ export function encodeBCD(value) {
 
 /**
  * @param {number} oneHot
+ * @returns {number}
  */
 export function decodeOneHot(oneHot) {
+	if(oneHot === 0) { throw new Error('one-hot zero invalid') }
 	const single = oneHot > 0 && (oneHot & (oneHot - 1)) === 0
 	if(!single) { throw new Error('not one-hot value') }
 	return Math.log2(oneHot) + 1
@@ -101,7 +117,19 @@ export function decodeOneHot(oneHot) {
  * @returns {number}
  */
 export function encodeOneHot(value) {
+	if(value === 0) { throw new Error('one-hot zero invalid') }
 	return 1 << (value - 1)
+}
+
+
+/**
+ * @param {number} oneHot
+ * @param {number} index
+ * @returns {boolean}
+ */
+export function isOneHotSet(oneHot, index) {
+	const mask = encodeOneHot(index)
+	return (oneHot & mask) === mask
 }
 
 /**
@@ -109,9 +137,11 @@ export function encodeOneHot(value) {
  * @param {number} bitWidth
  */
 export function decodeTwos(value, bitWidth) {
+	const mask = (1 << bitWidth) - 1
 	const maxUnsigned = 1 << bitWidth
   const maxSigned = maxUnsigned >> 1
-  return value >= maxSigned ? value - maxUnsigned : value
+	const val = value & mask
+  return val >= maxSigned ? val - maxUnsigned : val
 }
 
 /**
@@ -119,21 +149,23 @@ export function decodeTwos(value, bitWidth) {
  * @param {number} bitWidth
  */
 export function encodeTwos(value, bitWidth) {
+	// const mask = (1 << bitWidth) - 1
 	const maxUnsigned = 1 << bitWidth
 	return value < 0 ? value + maxUnsigned : value
 }
 
-
-
 export class Converter {
 	/**
 	 * @param {I2CBufferSource} buffer
+	 * @param {number} baseYear
 	 * @returns {Time}
 	 */
-	static decodeTimeHighRes(buffer) {
+	static decodeTimeHighRes(buffer, baseYear) {
 		const u8 = ArrayBuffer.isView(buffer) ?
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
+
+		if(u8.byteLength < HIGH_RES_TIME_BLOCK.length) { throw new RangeError('invalid buffer length') }
 
 		const [
 			hundredth, second, minute, hour,
@@ -149,10 +181,10 @@ export class Converter {
 		if(month === undefined) { throw new Error('undefined time value') }
 		if(year === undefined) { throw new Error('undefined time value') }
 
-		const millisecond = decodeBCD(hundredth) * 10
+		const millisecond = decodeBCD(hundredth) * HUNDREDTHS_PER_MILLISECOND
 
 		return Temporal.PlainDateTime.from({
-			year: decodeBCD(year),
+			year: baseYear + decodeBCD(year),
 			month: decodeBCD(month),
 			day: decodeBCD(date),
 			dayOfWeek: decodeOneHot(weekday),
@@ -165,12 +197,15 @@ export class Converter {
 
 	/**
 	 * @param {I2CBufferSource} buffer
+	 * @param {number} baseYear
 	 * @returns {Time}
 	 */
-	static decodeTime(buffer) {
+	static decodeTime(buffer, baseYear) {
 		const u8 = ArrayBuffer.isView(buffer) ?
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
+
+		if(u8.byteLength < TIME_BLOCK.length) { throw new RangeError('invalid buffer length') }
 
 		const [
 			second, minute, hour,
@@ -186,7 +221,7 @@ export class Converter {
 		if(year === undefined) { throw new Error('undefined time value') }
 
 		return Temporal.PlainDateTime.from({
-			year: decodeBCD(year),
+			year: baseYear + decodeBCD(year),
 			month: decodeBCD(month),
 			day: decodeBCD(date),
 			dayOfWeek: decodeOneHot(weekday),
@@ -198,9 +233,12 @@ export class Converter {
 
 	/**
 	 * @param {Time} time
+	 * @param {number} baseYear
 	 * @returns {I2CBufferSource}
 	 */
-	static encodeTime(time) {
+	static encodeTime(time, baseYear) {
+		// todo sanity check that baseYear and time.year are sain?
+
 		return Uint8Array.from([
 			encodeBCD(time.second),
 			encodeBCD(time.minute),
@@ -208,7 +246,7 @@ export class Converter {
 			encodeOneHot(time.dayOfWeek),
 			encodeBCD(time.day),
 			encodeBCD(time.month),
-			encodeBCD(time.year)
+			encodeBCD(time.year - baseYear)
 		])
 	}
 
@@ -222,35 +260,47 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
+		if(u8.byteLength < ALARM_BLOCK.length) { throw new RangeError('invalid buffer length') }
+
 		const [ minuteAlarm, hourAlarm, weekdayOrDateAlarm ] = u8
 
 		if(minuteAlarm === undefined) { throw new Error('undefined byte') }
 		if(hourAlarm === undefined) { throw new Error('undefined byte') }
 		if(weekdayOrDateAlarm === undefined) { throw new Error('undefined byte') }
 
-		const minuteMatch = (minuteAlarm & ALARM_ENABLE_MASK) === ALARM_ENABLE_MASK
-		const minute = decodeBCD(minuteAlarm & ALARM_MINUTE_MASK)
+		const minuteMatch = BitSmush.extractBits(minuteAlarm, 7, 1) === 1
+		const minute = decodeBCD(BitSmush.extractBits(minuteAlarm, 6, 7))
 
-		const hourMatch = (hourAlarm & ALARM_ENABLE_MASK) === ALARM_ENABLE_MASK
-		const hour = decodeBCD(hourAlarm & ALARM_HOUR_MASK)
+		const hourMatch = BitSmush.extractBits(hourAlarm, 7, 1) === 1
+		const hour = decodeBCD(BitSmush.extractBits(hourAlarm, 5, 6))
 
-		const weekdayOrDateMatch = (weekdayOrDateAlarm & ALARM_ENABLE_MASK) === ALARM_ENABLE_MASK
+		const weekdayOrDateMatch = BitSmush.extractBits(weekdayOrDateAlarm, 7, 1) === 1
+		const weekdayMatch = weekdayOrDateMatch
+		const dateMatch = weekdayOrDateMatch
 
 		const weekdayMask = weekdayOrDateAlarm & ALARM_WEEKDAY_MASK
-		const dateOrZero = decodeBCD(weekdayOrDateAlarm & ALARM_DATE_MASK)
+		const date = decodeBCD(weekdayOrDateAlarm & ALARM_DATE_MASK)
 
-		const gp0 = hourAlarm & ALARM_HOUR_GP0_MASK
+		const gp0 = BitSmush.extractBits(hourAlarm, 6, 1)
 		const gp1 = useWeekday ? (weekdayOrDateAlarm & ALARM_WEEKDAY_OR_DATE_GP1_MASK) : undefined
 
+		const weekday = [
+			false, false, false, false, false, false, false
+		].map((_, index) => isOneHotSet(weekdayMask, index + 1))
 
 		return {
+			useWeekday,
+
 			minuteMatch, minute,
 			hourMatch, hour,
+			gp0,
 
-			weekday,
-			date,
+			//
+			weekdayMatch, weekday,
 
-			gp0, gp1
+			//
+			dateMatch, date,
+			gp1
 		}
 	}
 
@@ -259,9 +309,13 @@ export class Converter {
 	 * @returns {I2CBufferSource}
 	 */
 	static encodeAlarm(alarm) {
-		const buffer = new Uint8Array()
 		// todo
-		return buffer
+
+
+
+
+
+		return Uint8Array.from([ 0,0,0 ])
 	}
 
 	/**
@@ -276,6 +330,7 @@ export class Converter {
 		const [ value ] = u8
 		if(value === undefined) { throw new Error('undefined value') }
 
+		// todo units 1/(32768*128) = 0.2384 ppm
 		return decodeTwos(value, OFFSET_BIT_WIDTH)
 	}
 
@@ -284,6 +339,9 @@ export class Converter {
 	 * @returns {I2CBufferSource}
 	 */
 	static encodeOffset(offset) {
+		// todo units 1/(32768*128) = 0.2384 ppm
+		if(offset < -32) { throw new RangeError('offset out of bounds') }
+		if(offset > 31) { throw new RangeError('offset out of bounds') }
 		return Uint8Array.from([ encodeTwos(offset, OFFSET_BIT_WIDTH) ])
 	}
 
@@ -307,7 +365,9 @@ export class Converter {
 	 * @returns {I2CBufferSource}
 	 */
 	static encodeRAM(value) {
-		return Uint8ClampedArray.from([ value])
+		if(value < 0) { throw new RangeError('ram overflow') }
+		if(value > 0xFF) { throw new RangeError('ram overflow') }
+		return Uint8Array.from([ value ])
 	}
 
 	/**
@@ -319,6 +379,8 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
+		if(u8.byteLength < TIMER_BLOCK.length) { throw new RangeError('invalid buffer length') }
+
 		const [ tc0, tc1 ] = u8
 
 		if(tc0 === undefined) { throw new Error('undefined value') }
@@ -328,7 +390,7 @@ export class Converter {
 		const upper = tc1 & TIMER_COUNTER_1_UPPER_MASK
 		const timer = (upper << 8) | lower
 
-		const gp2_5 = tc1 & TIMER_COUNTER_1_GP_MASK
+		const gp2_5 = (tc1 & TIMER_COUNTER_1_GP_MASK) >> 4
 
 		return {
 			timer, gp2_5
@@ -341,6 +403,8 @@ export class Converter {
 	 * @returns {I2CBufferSource}
 	 */
 	static encodeTimer(timer) {
+		if(timer.gp2_5 > MAX_4_BIT_TIMER_GP) { throw new RangeError('gpio out of bounds') }
+
 		const upper = (timer.timer >> 8) & TIMER_COUNTER_1_UPPER_MASK
 		const lower = timer.timer & TIMER_COUNTER_0_LOWER_MASK
 
@@ -362,18 +426,16 @@ export class Converter {
 		const [ value ] = u8
 		if(value === undefined) { throw new Error('undefined value') }
 
-		const enableInterruptPeriodicTimeUpdate = (value >> CONTROL_UIE_OFFSET) === 1
-		const enableInterruptPeriodicCountdownEvent = (value >> CONTROL_TIE_OFFSET) === 1
-		const enableInterruptAlarm = (value >> CONTROL_AIE_OFFSET) === 1
-		const enableInterruptExternalEvent = (value >> CONTROL_EIE_OFFSET) === 1
-		const reset = (value >> CONTROL_RESET_OFFSET) === 1
+		const [
+			uie, tie, aie, eie, reset
+		] = BitSmush.unSmushBits(CONTROL_SMUSH_MAP, value)
 
 		return {
-			enableInterruptPeriodicTimeUpdate,
-			enableInterruptPeriodicCountdownEvent,
-			enableInterruptAlarm,
-			enableInterruptExternalEvent,
-			reset
+			enableInterruptPeriodicTimeUpdate: uie === 1,
+			enableInterruptPeriodicCountdownEvent: tie === 1,
+			enableInterruptAlarm: aie === 1,
+			enableInterruptExternalEvent: eie === 1,
+			reset: reset === 1
 		}
 	}
 
@@ -382,13 +444,13 @@ export class Converter {
 	 * @returns {I2CBufferSource}
 	 */
 	static encodeControl(control) {
-		const uie = (control.enableInterruptPeriodicTimeUpdate ? 1 : 0) << CONTROL_UIE_OFFSET
-		const tie = (control.enableInterruptPeriodicCountdownEvent ? 1 : 0) << CONTROL_TIE_OFFSET
-		const aie = (control.enableInterruptAlarm ? 1 : 0) << CONTROL_AIE_OFFSET
-		const eie = (control.enableInterruptExternalEvent ? 1 : 0) << CONTROL_EIE_OFFSET
-		const reset = (control.reset ? 1 : 0) << CONTROL_RESET_OFFSET
+		const uie = control.enableInterruptPeriodicTimeUpdate ? 1 : 0
+		const tie = control.enableInterruptPeriodicCountdownEvent ? 1 : 0
+		const aie = control.enableInterruptAlarm ? 1 : 0
+		const eie = control.enableInterruptExternalEvent ? 1 : 0
+		const reset = control.reset ? 1 : 0
 
-		const value = uie | tie | aie | eie | reset
+		const value = BitSmush.smushBits(CONTROL_SMUSH_MAP, [ uie, tie, aie, eie, reset ])
 
 		return Uint8Array.from([ value ])
 
@@ -410,8 +472,11 @@ export class Converter {
 			test, wada, usel, te, fd, td
 		] = BitSmush.unSmushBits(EXTENSION_SMUSH_MAP, value)
 
-		const alarmSelect = EXTENSION_PERIODIC_TIMER_SELECT_V2N.get(wada)
-		const periodicUpdateSelect = EXTENSION_ALARM_SELECT_V2N.get(usel)
+		const alarmSelect = EXTENSION_ALARM_SELECT_V2N.get(wada)
+		const periodicUpdateSelect = EXTENSION_PERIODIC_TIMER_SELECT_V2N.get(usel)
+
+		if(alarmSelect === undefined) { throw new Error('unknown alarm select value') }
+		if(periodicUpdateSelect === undefined) { throw new Error('unknown update select value') }
 
 		return {
 			test: test === 1,
@@ -428,16 +493,19 @@ export class Converter {
 	 * @returns {I2CBufferSource}
 	 */
 	static encodeExtension(extension) {
-		const test = 0
-		const wada = EXTENSION_PERIODIC_TIMER_SELECT_N2V.get(extension.alarmSelect)
-		const usel = EXTENSION_ALARM_SELECT_N2V.get(extension.periodicUpdateSelect)
+		const test = extension.test ? 1 : 0
+		const wada = EXTENSION_ALARM_SELECT_N2V.get(extension.alarmSelect)
+		const usel = EXTENSION_PERIODIC_TIMER_SELECT_N2V.get(extension.periodicUpdateSelect)
 		const te = extension.enablePeriodicTimer ? 1 : 0
 		const fd = extension.outputFrequency
 		const td = extension.periodicCountdownFrequency
 
+		if(wada === undefined) { throw new Error('unknown alarm select name') }
+		if(usel === undefined) { throw new Error('unknown update select name') }
+
 		const value = BitSmush.smushBits(EXTENSION_SMUSH_MAP, [ test, wada, usel, te, fd, td ])
 
-		return Uint8ClampedArray.from([ value ])
+		return Uint8Array.from([ value ])
 	}
 
 	/**
@@ -509,6 +577,8 @@ export class Converter {
 		const filteringTime = et
 		const enableReset = erst === 1
 
+		if(edge === undefined) { throw new Error('unknown edge value') }
+
 		return {
 			enableCapture,
 			edge,
@@ -527,6 +597,8 @@ export class Converter {
 		const et = eventControl.filteringTime
 		const erst = eventControl.enableReset ? 1 : 0
 
+		if(ehl === undefined) { throw new Error('unknown edge name') }
+
 		const value = BitSmush.smushBits(EVENT_CONTROL_SMUSH_MAP, [ ecp, ehl, et, erst ])
 		return Uint8Array.from([ value ])
 	}
@@ -540,15 +612,19 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
+		if(u8.byteLength < CAPTURE_BLOCK.length) { throw new RangeError('invalid buffer length') }
+
 		const [ hundredth, seconds ] = u8
 
-		if(hundredth === undefined) { throw new Error('undefined time value') }
-		if(seconds === undefined) { throw new Error('undefined time value') }
+		if(hundredth === undefined) { throw new Error('undefined value') }
+		if(seconds === undefined) { throw new Error('undefined value') }
 
-		const milliseconds = decodeBCD(hundredth) * 10
+		const milliseconds = decodeBCD(hundredth) * HUNDREDTHS_PER_MILLISECOND
 
+		// not balanced let caller decide (and peek original values)
 		return Temporal.Duration.from({
-			seconds, milliseconds
+			seconds: decodeBCD(seconds),
+			milliseconds
 		})
 	}
 }

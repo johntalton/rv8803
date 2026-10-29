@@ -3,6 +3,7 @@
 
 /**
  * @typedef {Object} AlarmBase
+ * @property {boolean} useWeekday
  * @property {boolean} minuteMatch
  * @property {number} minute
  * @property {boolean} hourMatch
@@ -12,6 +13,7 @@
 
 /**
  * @typedef {Object} AlarmWeekday
+ * @property {true} useWeekday
  * @property {boolean} weekdayMatch
  * @property {Array<boolean>} weekday
  * @property {number|undefined} gp1
@@ -19,11 +21,12 @@
 
 /**
  * @typedef {Object} AlarmDate
+ * @property {false} useWeekday
  * @property {boolean} dateMatch
  * @property {number} date
  */
 
-/** @typedef {AlarmBase & (AlarmDate | AlarmWeekday)} Alarm */
+/** @typedef {(AlarmDate & AlarmBase) | (AlarmWeekday & AlarmBase)} Alarm */
 
 /**
  * @typedef {number} Offset
@@ -53,11 +56,15 @@
  * @typedef {number} PeriodicClockFrequency
  */
 
+/** @typedef {'weekday'|'date'} AlarmSelect */
+
+/** @typedef {'second'|'minute'} UpdateSelect */
+
 /**
  * @typedef {Object} Extension
  * @property {boolean} test
- * @property {'weekday'|'date'} alarmSelect
- * @property {'second'|'minute'} periodicUpdateSelect
+ * @property {AlarmSelect} alarmSelect
+ * @property {UpdateSelect} periodicUpdateSelect
  * @property {boolean} enablePeriodicTimer
  * @property {ClockOutputFrequency} outputFrequency
  * @property {PeriodicClockFrequency} periodicCountdownFrequency
@@ -79,10 +86,12 @@
 
 /** @typedef {number} EventFilteringTime */
 
+/** @typedef {'high'|'low'} EventEdge */
+
 /**
  * @typedef {Object} EventControl
  * @property {boolean} enableCapture
- * @property {'high'|'low'} edge
+ * @property {EventEdge} edge
  * @property {EventFilteringTime} filteringTime
  * @property {boolean} enableReset
  */

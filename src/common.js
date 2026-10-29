@@ -33,6 +33,7 @@ export class Common {
 	 * @returns {Promise<void>}
 	 */
 	static async setTime(bus, buffer) {
+		if(buffer.byteLength !== TIME_BLOCK.length) { throw new Error('invalid buffer length') }
 		await bus.writeI2cBlock(TIME_BLOCK.start, buffer)
 	}
 
@@ -50,6 +51,7 @@ export class Common {
 	 * @returns {Promise<void>}
 	 */
 	static async setAlarm(bus, buffer) {
+		if(buffer.byteLength !== ALARM_BLOCK.length) { throw new Error('invalid buffer length') }
 		await bus.writeI2cBlock(ALARM_BLOCK.start, buffer)
 	}
 
@@ -67,6 +69,7 @@ export class Common {
 	 * @returns {Promise<void>}
 	 */
 	static async setOffset(bus, buffer) {
+		if(buffer.byteLength !== 1) { throw new Error('invalid buffer length') }
 		await bus.writeI2cBlock(REGISTERS.OFFSET, buffer)
 	}
 
@@ -84,6 +87,7 @@ export class Common {
 	 * @returns {Promise<void>}
 	 */
 	static async setRAM(bus, buffer) {
+		if(buffer.byteLength !== 1) { throw new Error('invalid buffer length') }
 		await bus.writeI2cBlock(REGISTERS.RAM, buffer)
 	}
 
@@ -101,6 +105,7 @@ export class Common {
 	 * @returns {Promise<void>}
 	 */
 	static async setTimer(bus, buffer) {
+		if(buffer.byteLength !== TIMER_BLOCK.length) { throw new Error('invalid buffer length') }
 		await bus.writeI2cBlock(TIMER_BLOCK.start, buffer)
 	}
 
@@ -118,6 +123,7 @@ export class Common {
 	 * @returns {Promise<void>}
 	 */
 	static async setControl(bus, buffer) {
+		if(buffer.byteLength !== 1) { throw new Error('invalid buffer length') }
 		await bus.writeI2cBlock(REGISTERS.CONTROL_REGISTER, buffer)
 	}
 
@@ -135,6 +141,7 @@ export class Common {
 	 * @returns {Promise<void>}
 	 */
 	static async setExtension(bus, buffer) {
+		if(buffer.byteLength !== 1) { throw new Error('invalid buffer length') }
 		await bus.writeI2cBlock(REGISTERS.EXTENSION_REGISTER, buffer)
 	}
 
@@ -152,6 +159,7 @@ export class Common {
 	 * @returns {Promise<void>}
 	 */
 	static async clearFlags(bus, buffer) {
+		if(buffer.byteLength !== 1) { throw new Error('invalid buffer length') }
 		await bus.writeI2cBlock(REGISTERS.FLAGS_REGISTER, buffer)
 	}
 
@@ -169,6 +177,7 @@ export class Common {
 	 * @returns {Promise<void>}
 	 */
 	static async setEventControl(bus, buffer) {
+		if(buffer.byteLength !== 1) { throw new Error('invalid buffer length') }
 		await bus.writeI2cBlock(REGISTERS.EVENT_CONTROL, buffer)
 	}
 

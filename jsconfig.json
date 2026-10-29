@@ -6,6 +6,7 @@
     "module": "nodenext",
     "lib": ["ESNext" ],
     "moduleResolution": "nodenext",
+    "types": [ "node" ],
 
     "noEmitOnError": false,
 
