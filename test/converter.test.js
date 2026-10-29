@@ -142,6 +142,13 @@ describe('Converter', () => {
 			})
 		})
 
+		it('should handle invalid buffer length', () => {
+			Assert.throws(() => Converter.decodeTimeHighRes(new ArrayBuffer(), 0), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should handle zero', () => {
 			const buffer = Uint8Array.from([ 0, 0, 0, 0, 0, 0, 0, 0 ])
 			Assert.throws(() => Converter.decodeTimeHighRes(buffer, 0), {
@@ -164,7 +171,7 @@ describe('Converter', () => {
 			Assert.equal(result.toJSON(), '1970-01-01T00:00:00')
 		})
 
-		it('should handle Apollo 11 Lunar Module Lands', () => {
+		it('should handle Apollo 11 Lunar Module Lands (ArrayBuffer)', () => {
 			// July 20, 1969
 			// 4:17 PM (EDT)
 			// Sunday
@@ -178,7 +185,7 @@ describe('Converter', () => {
 				encodeBCD(7),
 				encodeBCD(69)
 			])
-			const result = Converter.decodeTimeHighRes(buffer, 1900)
+			const result = Converter.decodeTimeHighRes(buffer.buffer, 1900)
 			Assert.equal(
 				result.toLocaleString('en-US', {
 					dateStyle: 'full',
@@ -202,6 +209,13 @@ describe('Converter', () => {
 	describe('decodeTime', () => {
 		it('should handle undefined', () => {
 			Assert.throws(() => Converter.decodeTime(undefined, 0), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
+		it('should handle invalid buffer length', () => {
+			Assert.throws(() => Converter.decodeTime(new ArrayBuffer(), 0), {
 				message: 'invalid buffer length',
 				name: 'RangeError'
 			})
@@ -287,10 +301,7 @@ describe('Converter', () => {
 				hourMatch: false, hour: 0,
 				gp0: 0,
 
-				weekdayMatch: false, weekday: [ false, false, false, false, false, false, false ],
-
-				dateMatch: false, date: 0,
-				gp1: 0
+				weekdayMatch: false, weekday: [ false, false, false, false, false, false, false ]
 			})
 		})
 
@@ -306,18 +317,15 @@ describe('Converter', () => {
 				hourMatch: false, hour: 0,
 				gp0: 0,
 
-				weekdayMatch: true, weekday: [ true, false, false, false, false, true, false ],
-
-				dateMatch: true, date: 21,
-				gp1: 0
+				weekdayMatch: true, weekday: [ true, false, false, false, false, true, false ]
 			})
 		})
 
-		it('should handle date 21, gp0:1', () => {
+		it('should handle date 21, gp0:1 (ArrayBuffer)', () => {
 			const buffer = Uint8Array.from([
 				0b0000_0010, 0b0100_0000, 0b1100_0000 | encodeBCD(21)
 			])
-			const result = Converter.decodeAlarm(buffer, false)
+			const result = Converter.decodeAlarm(buffer.buffer, false)
 			Assert.deepEqual(result, {
 				useWeekday: false,
 
@@ -325,10 +333,8 @@ describe('Converter', () => {
 				hourMatch: false, hour: 0,
 				gp0: 1,
 
-				weekdayMatch: true, weekday: [ true, false, false, false, false, true, true ],
-
 				dateMatch: true, date: 21,
-				gp1: undefined
+				gp1: 1
 			})
 		})
 	})
@@ -342,8 +348,7 @@ describe('Converter', () => {
 				hourMatch: false, hour: 0,
 				gp0: 0,
 
-				weekdayMatch: false, weekday: [],
-				gp1: 0
+				weekdayMatch: false, weekday: []
 			})
 			Assert.deepEqual(result, Uint8Array.from([ 0, 0, 0 ]))
 		})
@@ -356,13 +361,21 @@ describe('Converter', () => {
 				hourMatch: false, hour: 0,
 				gp0: 0,
 
-				dateMatch: false, date: 0
+				dateMatch: false, date: 0,
+				gp1: 0,
 			})
 			Assert.deepEqual(result, Uint8Array.from([ 0, 0, 0 ]))
 		})
 	})
 
 	describe('decodeOffset', () => {
+		it('should handle invalid buffer length', () => {
+			Assert.throws(() => Converter.decodeOffset(new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should handle zero', () => {
 			const buffer = Int8Array.from([ 0 ])
 			const result = Converter.decodeOffset(buffer)
@@ -375,9 +388,9 @@ describe('Converter', () => {
 			Assert.equal(result, -31)
 		})
 
-		it('should handle 1 (with out of range bits)', () => {
+		it('should handle 1 (with out of range bits) (ArrayBuffer)', () => {
 			const buffer = Uint8Array.from([ 0b1100_0001 ])
-			const result = Converter.decodeOffset(buffer)
+			const result = Converter.decodeOffset(buffer.buffer)
 			Assert.equal(result, 1)
 		})
 	})
@@ -402,10 +415,23 @@ describe('Converter', () => {
 	})
 
 	describe('decodeRAM', () => {
+		it('should handle invalid buffer length', () => {
+			Assert.throws(() => Converter.decodeRAM(new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should handle value', () => {
 			const buffer = Uint8Array.from([ 42 ])
 			const result = Converter.decodeRAM(buffer)
 			Assert.equal(result, 42)
+		})
+
+		it('should handle value (ArrayBuffer)', () => {
+			const buffer = Uint8Array.from([ 77 ])
+			const result = Converter.decodeRAM(buffer.buffer)
+			Assert.equal(result, 77)
 		})
 	})
 
@@ -449,6 +475,15 @@ describe('Converter', () => {
 				gp2_5: 0b1111
 			})
 		})
+
+		it('should handle value (ArrayBuffer)', () => {
+			const buffer = Uint8Array.from([ 0b0111_0010, 0b1001_0101 ])
+			const result = Converter.decodeTimer(buffer.buffer)
+			Assert.deepEqual(result, {
+				timer: 0b0101_0111_0010,
+				gp2_5: 0b1001
+			})
+		})
 	})
 
 	describe('encodeTimer', () => {
@@ -488,6 +523,13 @@ describe('Converter', () => {
 	})
 
 	describe('decodeControl', () => {
+		it('should handle invalid buffer length', () => {
+			Assert.throws(() => Converter.decodeControl(new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should handle zero', () => {
 			const buffer = Uint8Array.from([ 0 ])
 			const result = Converter.decodeControl(buffer)
@@ -509,6 +551,18 @@ describe('Converter', () => {
 				enableInterruptAlarm: true,
 				enableInterruptExternalEvent: true,
 				reset: false
+			})
+		})
+
+		it('should handle reset only (ArrayBuffer)', () => {
+			const buffer = Uint8Array.from([ 0b0000_0001 ])
+			const result = Converter.decodeControl(buffer.buffer)
+			Assert.deepEqual(result, {
+				enableInterruptPeriodicTimeUpdate: false,
+				enableInterruptPeriodicCountdownEvent: false,
+				enableInterruptAlarm: false,
+				enableInterruptExternalEvent: false,
+				reset: true
 			})
 		})
 	})
@@ -538,6 +592,13 @@ describe('Converter', () => {
 	})
 
 	describe('decodeExtension', () => {
+		it('should handle invalid buffer', () => {
+			Assert.throws(() => Converter.decodeExtension(new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should handle zero', () => {
 			const buffer = Uint8Array.from([ 0 ])
 			const result = Converter.decodeExtension(buffer)
@@ -561,6 +622,19 @@ describe('Converter', () => {
 				enablePeriodicTimer: false,
 				outputFrequency: 1,
 				periodicCountdownFrequency: 2
+			})
+		})
+
+		it('should handle custom (ArrayBuffer)', () => {
+			const buffer = Uint8Array.from([ 0b0110_1111 ])
+			const result = Converter.decodeExtension(buffer.buffer)
+			Assert.deepEqual(result, {
+				test: false,
+				alarmSelect: 'date',
+				periodicUpdateSelect: 'minute',
+				enablePeriodicTimer: false,
+				outputFrequency: 3,
+				periodicCountdownFrequency: 3
 			})
 		})
 	})
@@ -604,6 +678,13 @@ describe('Converter', () => {
 	})
 
 	describe('decodeFlags', () => {
+		it('should handle invalid buffer length', () => {
+			Assert.throws(() => Converter.decodeFlags(new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should handle zero', () => {
 			const buffer = Uint8Array.from([ 0 ])
 			const result = Converter.decodeFlags(buffer)
@@ -626,6 +707,19 @@ describe('Converter', () => {
 				alarm: true,
 				externalEvent: false,
 				dataLoss: true,
+				temperatureCompensation: false
+			})
+		})
+
+		it('should handle custom (ArrayBuffer)', () => {
+			const buffer = Uint8Array.from([ 0b0011_1000 ])
+			const result = Converter.decodeFlags(buffer.buffer)
+			Assert.deepEqual(result, {
+				periodicTimeUpdate: true,
+				periodicCountdownTimer: true,
+				alarm: true,
+				externalEvent: false,
+				dataLoss: false,
 				temperatureCompensation: false
 			})
 		})
@@ -656,8 +750,26 @@ describe('Converter', () => {
 	})
 
 	describe('decodeEventControl', () => {
+		it('should handle invalid buffer', () => {
+			Assert.throws(() => Converter.decodeEventControl(new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should handle zero', () => {
 			const buffer = Uint8Array.from([ 0 ])
+			const result = Converter.decodeEventControl(buffer)
+			Assert.deepEqual(result, {
+				enableCapture: false,
+				edge: 'low',
+				filteringTime: 0,
+				enableReset: false
+			})
+		})
+
+		it('should handle zero (oversize buffer)', () => {
+			const buffer = Uint8Array.from([ 0, 42, 77 ])
 			const result = Converter.decodeEventControl(buffer)
 			Assert.deepEqual(result, {
 				enableCapture: false,
@@ -681,6 +793,17 @@ describe('Converter', () => {
 		it('should handle with filter timing', () => {
 			const buffer = Uint8Array.from([ 0b0011_0001 ])
 			const result = Converter.decodeEventControl(buffer)
+			Assert.deepEqual(result, {
+				enableCapture: false,
+				edge: 'low',
+				filteringTime: 3,
+				enableReset: true
+			})
+		})
+
+		it('should handle custom (ArrayBuffer)', () => {
+			const buffer = Uint8Array.from([ 0b0011_0001 ])
+			const result = Converter.decodeEventControl(buffer.buffer)
 			Assert.deepEqual(result, {
 				enableCapture: false,
 				edge: 'low',
@@ -721,8 +844,14 @@ describe('Converter', () => {
 			})
 		})
 
-		it('should handle zero ', () => {
+		it('should handle zero', () => {
 			const buffer = Uint8Array.from([ 0, 0 ])
+			const result = Converter.decodeCapture(buffer)
+			Assert.deepEqual(result.toLocaleString('en-US', { style: 'long', secondsDisplay: 'always' }), '0 seconds')
+		})
+
+		it('should handle zero (oversize buffer)', () => {
+			const buffer = Uint8Array.from([ 0, 0, 42, 77 ])
 			const result = Converter.decodeCapture(buffer)
 			Assert.deepEqual(result.toLocaleString('en-US', { style: 'long', secondsDisplay: 'always' }), '0 seconds')
 		})

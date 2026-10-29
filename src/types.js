@@ -16,7 +16,6 @@
  * @property {true} useWeekday
  * @property {boolean} weekdayMatch
  * @property {Array<boolean>} weekday
- * @property {number|undefined} gp1
  */
 
 /**
@@ -24,6 +23,7 @@
  * @property {false} useWeekday
  * @property {boolean} dateMatch
  * @property {number} date
+ * @property {number} gp1
  */
 
 /** @typedef {(AlarmDate & AlarmBase) | (AlarmWeekday & AlarmBase)} Alarm */

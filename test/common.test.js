@@ -26,6 +26,13 @@ describe('Common', () => {
 	})
 
 	describe('setTime', () => {
+		it('should check length', () => {
+			Assert.rejects(() => Common.setTime(undefined, new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should write', async () => {
 			const mb = new MemBus()
 			const bus = new I2CAddressedBus(mb, RV8803_DEFAULT_ADDRESS)
@@ -45,6 +52,13 @@ describe('Common', () => {
 	})
 
 	describe('setAlarm', () => {
+		it('should check length', () => {
+			Assert.rejects(() => Common.setAlarm(undefined, new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should write', async () => {
 			const mb = new MemBus()
 			const bus = new I2CAddressedBus(mb, RV8803_DEFAULT_ADDRESS)
@@ -64,6 +78,13 @@ describe('Common', () => {
 	})
 
 	describe('setOffset', () => {
+		it('should check length', () => {
+			Assert.rejects(() => Common.setOffset(undefined, new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should write', async () => {
 			const mb = new MemBus()
 			const bus = new I2CAddressedBus(mb, RV8803_DEFAULT_ADDRESS)
@@ -83,6 +104,13 @@ describe('Common', () => {
 	})
 
 	describe('setRAM', () => {
+		it('should check length', () => {
+			Assert.rejects(() => Common.setRAM(undefined, new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should write', async () => {
 			const mb = new MemBus()
 			const bus = new I2CAddressedBus(mb, RV8803_DEFAULT_ADDRESS)
@@ -102,6 +130,13 @@ describe('Common', () => {
 	})
 
 	describe('setTimer', () => {
+		it('should check length', () => {
+			Assert.rejects(() => Common.setTimer(undefined, new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should write', async () => {
 			const mb = new MemBus()
 			const bus = new I2CAddressedBus(mb, RV8803_DEFAULT_ADDRESS)
@@ -121,6 +156,13 @@ describe('Common', () => {
 	})
 
 	describe('setControl', () => {
+		it('should check length', () => {
+			Assert.rejects(() => Common.setControl(undefined, new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should write', async () => {
 			const mb = new MemBus()
 			const bus = new I2CAddressedBus(mb, RV8803_DEFAULT_ADDRESS)
@@ -140,6 +182,13 @@ describe('Common', () => {
 	})
 
 	describe('setExtension', () => {
+		it('should check length', () => {
+			Assert.rejects(() => Common.setExtension(undefined, new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should write', async () => {
 			const mb = new MemBus()
 			const bus = new I2CAddressedBus(mb, RV8803_DEFAULT_ADDRESS)
@@ -159,6 +208,13 @@ describe('Common', () => {
 	})
 
 	describe('clearFlags', () => {
+		it('should check length', () => {
+			Assert.rejects(() => Common.clearFlags(undefined, new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should write', async () => {
 			const mb = new MemBus()
 			const bus = new I2CAddressedBus(mb, RV8803_DEFAULT_ADDRESS)
@@ -178,6 +234,13 @@ describe('Common', () => {
 	})
 
 	describe('setEventControl', () => {
+		it('should check length', () => {
+			Assert.rejects(() => Common.setEventControl(undefined, new ArrayBuffer()), {
+				message: 'invalid buffer length',
+				name: 'RangeError'
+			})
+		})
+
 		it('should write', async () => {
 			const mb = new MemBus()
 			const bus = new I2CAddressedBus(mb, RV8803_DEFAULT_ADDRESS)

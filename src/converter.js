@@ -35,10 +35,25 @@ export const MAX_4_BIT_TIMER_GP = 0x0F
 
 export const MAX_BCD_8 = 150 + 15
 
+export const MAX_OFFSET = 31
+export const MIN_OFFSET = -32
+
+export const MAX_RAM = 0xFF
+export const MIN_RAM = 0
+
 //
 export const ALARM_WEEKDAY_MASK = 0b0111_1111
 export const ALARM_DATE_MASK = 0b0011_1111
-export const ALARM_WEEKDAY_OR_DATE_GP1_MASK = 0b0100_0000
+export const GP_MASK = 0b1
+/** @type {SmushMap} */
+export const ALARM_MINUTE_SMUSH_MAP = [ [ 7,1 ], [ 6,7 ] ]
+/** @type {SmushMap} */
+export const ALARM_HOUR_SMUSH_MAP = [ [ 7,1 ], [ 6,1 ], [ 5,6 ] ]
+/** @type {SmushMap} */
+export const ALARM_WEEKDAY_SMUSH_MAP = [ [ 7,1], [ 6,7 ] ]
+/** @type {SmushMap} */
+export const ALARM_DATE_SMUSH_MAP = [ [ 7,1], [ 6,1 ], [ 5,6 ] ]
+
 
 //
 export const OFFSET_BIT_WIDTH = 6
@@ -265,30 +280,39 @@ export class Converter {
 
 		const hourMatch = BitSmush.extractBits(hourAlarm, 7, 1) === 1
 		const hour = decodeBCD(BitSmush.extractBits(hourAlarm, 5, 6))
+		const gp0 = BitSmush.extractBits(hourAlarm, 6, 1)
 
 		const weekdayOrDateMatch = BitSmush.extractBits(weekdayOrDateAlarm, 7, 1) === 1
-		const weekdayMatch = weekdayOrDateMatch
+
+		if(useWeekday) {
+			const weekdayMatch = weekdayOrDateMatch
+			const weekdayMask = weekdayOrDateAlarm & ALARM_WEEKDAY_MASK
+			const weekday = [
+				false, false, false, false, false, false, false
+			].map((_, index) => isOneHotSet(weekdayMask, index + 1))
+
+			return {
+				useWeekday: true,
+
+				minuteMatch, minute,
+				hourMatch, hour,
+				gp0,
+
+				//
+				weekdayMatch, weekday,
+			}
+		}
+
 		const dateMatch = weekdayOrDateMatch
-
-		const weekdayMask = weekdayOrDateAlarm & ALARM_WEEKDAY_MASK
 		const date = decodeBCD(weekdayOrDateAlarm & ALARM_DATE_MASK)
-
-		const gp0 = BitSmush.extractBits(hourAlarm, 6, 1)
-		const gp1 = useWeekday ? (weekdayOrDateAlarm & ALARM_WEEKDAY_OR_DATE_GP1_MASK) : undefined
-
-		const weekday = [
-			false, false, false, false, false, false, false
-		].map((_, index) => isOneHotSet(weekdayMask, index + 1))
+		const gp1 = BitSmush.extractBits(weekdayOrDateAlarm, 6, 1)
 
 		return {
-			useWeekday,
+			useWeekday: false,
 
 			minuteMatch, minute,
 			hourMatch, hour,
 			gp0,
-
-			//
-			weekdayMatch, weekday,
 
 			//
 			dateMatch, date,
@@ -301,13 +325,24 @@ export class Converter {
 	 * @returns {I2CBufferSource}
 	 */
 	static encodeAlarm(alarm) {
-		// todo
+		const ae_m = alarm.minuteMatch ? 1 : 0
+		const minute = encodeBCD(alarm.minute)
 
+		const ae_h = alarm.hourMatch ? 1 : 0
+		const hour = encodeBCD(alarm.hour)
+		const gp0 = alarm.gp0 & GP_MASK
 
+		const ae_wd = (alarm.useWeekday ? alarm.weekdayMatch : alarm.dateMatch) ? 1 : 0
 
+		const weekday = 0 // TODO !!
 
+		const minuteAlarm = BitSmush.smushBits(ALARM_MINUTE_SMUSH_MAP, [ ae_m, minute ])
+		const hourAlarm = BitSmush.smushBits(ALARM_HOUR_SMUSH_MAP, [ ae_h, gp0, hour ])
+		const weekdayOrDateAlarm = alarm.useWeekday ?
+			BitSmush.smushBits(ALARM_WEEKDAY_SMUSH_MAP, [ ae_wd, weekday ]) :
+			BitSmush.smushBits(ALARM_DATE_SMUSH_MAP, [ ae_wd, (alarm.gp1 & GP_MASK), encodeBCD(alarm.date) ])
 
-		return Uint8Array.from([ 0,0,0 ])
+		return Uint8Array.from([ minuteAlarm ,hourAlarm, weekdayOrDateAlarm ])
 	}
 
 	/**
@@ -333,8 +368,8 @@ export class Converter {
 	 */
 	static encodeOffset(offset) {
 		// todo units 1/(32768*128) = 0.2384 ppm
-		if(offset < -32) { throw new RangeError('offset out of bounds') }
-		if(offset > 31) { throw new RangeError('offset out of bounds') }
+		if(offset < MIN_OFFSET) { throw new RangeError('offset out of bounds') }
+		if(offset > MAX_OFFSET) { throw new RangeError('offset out of bounds') }
 		return Uint8Array.from([ encodeTwos(offset, OFFSET_BIT_WIDTH) ])
 	}
 
@@ -358,8 +393,8 @@ export class Converter {
 	 * @returns {I2CBufferSource}
 	 */
 	static encodeRAM(value) {
-		if(value < 0) { throw new RangeError('ram overflow') }
-		if(value > 0xFF) { throw new RangeError('ram overflow') }
+		if(value < MIN_RAM) { throw new RangeError('ram overflow') }
+		if(value > MAX_RAM) { throw new RangeError('ram overflow') }
 		return Uint8Array.from([ value ])
 	}
 
@@ -375,9 +410,6 @@ export class Converter {
 		if(!hasByteLength(u8, TIMER_BLOCK.length)) { throw new RangeError('invalid buffer length') }
 
 		const [ tc0, tc1 ] = u8
-
-		if(tc0 === undefined) { throw new Error('undefined value') }
-		if(tc1 === undefined) { throw new Error('undefined value') }
 
 		const lower = tc0 & TIMER_COUNTER_0_LOWER_MASK
 		const upper = tc1 & TIMER_COUNTER_1_UPPER_MASK

@@ -6,6 +6,9 @@
   "keywords": [
     "RTC"
   ],
+  "engines": {
+    "node": ">=26"
+  },
   "exports": {
     ".": "./src/index.js"
   },
@@ -18,10 +21,10 @@
   "scripts": {
     "lint": "biome check",
     "test": "node --test test/**/*.test.js",
-    "coverage": "c8 --src src --check-coverage --statements 99 --branches 70 --functions 100 --lines 99 -r lcovonly -r text node --test test/**/*.test.js"
+    "coverage": "c8 --src src --check-coverage --statements 100 --branches 91 --functions 100 --lines 100 -r lcovonly -r text node --test test/**/*.test.js"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.2",
+    "@biomejs/biome": "^2.6.4",
     "@types/node": "^26.6.6",
     "c8": "^12.0.0"
   },
