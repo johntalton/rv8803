@@ -49,11 +49,11 @@
  */
 
 /**
- * @typedef {number} ClockOutputFrequency
+ * @typedef {'32kHz'|'1024Hz'|'1Hz'|'32kHz (alt)'} ClockOutputFrequency
  */
 
 /**
- * @typedef {number} PeriodicClockFrequency
+ * @typedef {'4096Hz'|'64Hz'|'1Hz'|'1/60Hz'} PeriodicClockFrequency
  */
 
 /** @typedef {'weekday'|'date'} AlarmSelect */
@@ -68,8 +68,6 @@
  * @property {boolean} enablePeriodicTimer
  * @property {ClockOutputFrequency} outputFrequency
  * @property {PeriodicClockFrequency} periodicCountdownFrequency
- *
- *
  */
 
 /**
@@ -84,7 +82,7 @@
 
 /** @typedef {Partial<Flags>} ClearFlags */
 
-/** @typedef {number} EventFilteringTime */
+/** @typedef {'None'|'3.9ms'|'15.6ms'|'125ms'} EventFilteringTime */
 
 /** @typedef {'high'|'low'} EventEdge */
 

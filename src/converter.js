@@ -10,7 +10,7 @@ import {
 } from './defs.js'
 
 /** @import { I2CBufferSource } from '@johntalton/and-other-delights' */
-/** @import { Time, Alarm, Offset, Timer, Control, Extension, UpdateSelect, AlarmSelect, Flags, ClearFlags, EventControl, EventEdge, Capture } from './types.js' */
+/** @import { Time, Alarm, Offset, Timer, Control, Extension, UpdateSelect, AlarmSelect, ClockOutputFrequency, PeriodicClockFrequency, Flags, ClearFlags, EventControl, EventEdge, EventFilteringTime, Capture } from './types.js' */
 /** @import { SmushMap } from '@johntalton/bitsmush' */
 
 /**
@@ -40,6 +40,9 @@ export const MIN_OFFSET = -32
 
 export const MAX_RAM = 0xFF
 export const MIN_RAM = 0
+
+export const MAX_TIMER = 4095
+export const MIN_TIMER = 0
 
 //
 export const ALARM_WEEKDAY_MASK = 0b0111_1111
@@ -89,6 +92,33 @@ export const EXTENSION_ALARM_SELECT_N2V = new Map([
 ])
 export const EXTENSION_ALARM_SELECT_V2N = new Map(Array.from(EXTENSION_ALARM_SELECT_N2V, ([key, value]) => [value, key]))
 
+export const EXTENSION_CLOCK_OUT_FREQUENCY_32_KHZ = '32kHz'
+export const EXTENSION_CLOCK_OUT_FREQUENCY_1024_HZ = '1024Hz'
+export const EXTENSION_CLOCK_OUT_FREQUENCY_1_HZ = '1Hz'
+export const EXTENSION_CLOCK_OUT_FREQUENCY_ALT_32_KHZ = '32kHz (alt)'
+/** @type {Map<ClockOutputFrequency, number>} */
+export const EXTENSION_CLOCK_OUT_FREQUENCY_N2V = new Map([
+	[ EXTENSION_CLOCK_OUT_FREQUENCY_32_KHZ, 0b00 ],
+	[ EXTENSION_CLOCK_OUT_FREQUENCY_1024_HZ, 0b01 ],
+	[ EXTENSION_CLOCK_OUT_FREQUENCY_1_HZ, 0b10 ],
+	[ EXTENSION_CLOCK_OUT_FREQUENCY_ALT_32_KHZ, 0b11 ]
+])
+export const EXTENSION_CLOCK_OUT_FREQUENCY_V2N = new Map(Array.from(EXTENSION_CLOCK_OUT_FREQUENCY_N2V, ([key, value]) => [value, key]))
+
+export const EXTENSION_TIMER_FREQUENCY_4096_HZ = '4096Hz'
+export const EXTENSION_TIMER_FREQUENCY_64_HZ = '64Hz'
+export const EXTENSION_TIMER_FREQUENCY_1_HZ = '1Hz'
+export const EXTENSION_TIMER_FREQUENCY_1_60_HZ = '1/60Hz'
+/** @type {Map<PeriodicClockFrequency, number>} */
+export const EXTENSION_TIMER_FREQUENCY_N2V = new Map([
+	[ EXTENSION_TIMER_FREQUENCY_4096_HZ, 0b00 ],
+	[ EXTENSION_TIMER_FREQUENCY_64_HZ, 0b01 ],
+	[ EXTENSION_TIMER_FREQUENCY_1_HZ, 0b10 ],
+	[ EXTENSION_TIMER_FREQUENCY_1_60_HZ, 0b11 ]
+])
+export const EXTENSION_TIMER_FREQUENCY_V2N = new Map(Array.from(EXTENSION_TIMER_FREQUENCY_N2V, ([key, value]) => [value, key]))
+
+
 //
 /** @type {SmushMap} */
 export const FLAGS_SMUSH_MAP = [ [ 5,1 ], [ 4,1 ], [ 3,1 ], [ 2,1 ], [ 1,1 ], [ 0,1 ] ]
@@ -104,8 +134,22 @@ export const EVENT_CONTROL_EDGE_N2V = new Map([
 	[ EVENT_CONTROL_EDGE_LOW, 0 ],
 	[ EVENT_CONTROL_EDGE_HIGH, 1 ]
 ])
-/** @type {Map<number, EventEdge>} */
 export const EVENT_CONTROL_EDGE_V2N = new Map(Array.from(EVENT_CONTROL_EDGE_N2V, ([key, value]) => [value, key]))
+
+export const EVENT_CONTROL_FILTERING_TIME_NONE = 'None'
+export const EVENT_CONTROL_FILTERING_TIME_3_9_MS = '3.9ms'
+export const EVENT_CONTROL_FILTERING_TIME_15_6_MS = '15.6ms'
+export const EVENT_CONTROL_FILTERING_TIME_125_MS = '125ms'
+/** @type {Map<EventFilteringTime, number>} */
+export const EVENT_CONTROL_FILTERING_TIME_N2V = new Map([
+	[ EVENT_CONTROL_FILTERING_TIME_NONE, 0b00 ],
+	[ EVENT_CONTROL_FILTERING_TIME_3_9_MS, 0b01 ],
+	[ EVENT_CONTROL_FILTERING_TIME_15_6_MS, 0b10 ],
+	[ EVENT_CONTROL_FILTERING_TIME_125_MS, 0b11 ]
+])
+export const EVENT_CONTROL_FILTERING_TIME_V2N = new Map(Array.from(EVENT_CONTROL_FILTERING_TIME_N2V, ([key, value]) => [value, key]))
+
+
 
 /**
  * @param {number} bcd
@@ -427,6 +471,8 @@ export class Converter {
 	 * @returns {I2CBufferSource}
 	 */
 	static encodeTimer(timer) {
+		if(timer.timer < MIN_TIMER) { throw new RangeError('timer out of bounds') }
+		if(timer.timer > MAX_TIMER) { throw new RangeError('timer out of bounds') }
 		if(timer.gp2_5 > MAX_4_BIT_TIMER_GP) { throw new RangeError('gpio out of bounds') }
 
 		const upper = (timer.timer >> 8) & TIMER_COUNTER_1_UPPER_MASK
@@ -499,17 +545,21 @@ export class Converter {
 
 		const alarmSelect = EXTENSION_ALARM_SELECT_V2N.get(wada)
 		const periodicUpdateSelect = EXTENSION_PERIODIC_TIMER_SELECT_V2N.get(usel)
+		const outputFrequency = EXTENSION_CLOCK_OUT_FREQUENCY_V2N.get(fd)
+		const periodicCountdownFrequency = EXTENSION_TIMER_FREQUENCY_V2N.get(td)
 
 		if(alarmSelect === undefined) { throw new Error('unknown alarm select value') }
 		if(periodicUpdateSelect === undefined) { throw new Error('unknown update select value') }
+		if(outputFrequency === undefined) { throw new Error('unknown output frequency value') }
+		if(periodicCountdownFrequency === undefined) { throw new Error('unknown timer frequency value') }
 
 		return {
 			test: test === 1,
 			alarmSelect,
 			periodicUpdateSelect,
 			enablePeriodicTimer: te === 1,
-			outputFrequency: fd,
-			periodicCountdownFrequency: td
+			outputFrequency,
+			periodicCountdownFrequency
 		}
 	}
 
@@ -522,11 +572,13 @@ export class Converter {
 		const wada = EXTENSION_ALARM_SELECT_N2V.get(extension.alarmSelect)
 		const usel = EXTENSION_PERIODIC_TIMER_SELECT_N2V.get(extension.periodicUpdateSelect)
 		const te = extension.enablePeriodicTimer ? 1 : 0
-		const fd = extension.outputFrequency
-		const td = extension.periodicCountdownFrequency
+		const fd = EXTENSION_CLOCK_OUT_FREQUENCY_N2V.get(extension.outputFrequency)
+		const td = EXTENSION_TIMER_FREQUENCY_N2V.get(extension.periodicCountdownFrequency)
 
 		if(wada === undefined) { throw new Error('unknown alarm select name') }
 		if(usel === undefined) { throw new Error('unknown update select name') }
+		if(fd === undefined) { throw new Error('unknown output frequency name') }
+		if(td === undefined) { throw new Error('unknown timer frequency name') }
 
 		const value = BitSmush.smushBits(EXTENSION_SMUSH_MAP, [ test, wada, usel, te, fd, td ])
 
@@ -601,10 +653,11 @@ export class Converter {
 
 		const enableCapture = ecp === 1
 		const edge = EVENT_CONTROL_EDGE_V2N.get(ehl)
-		const filteringTime = et
+		const filteringTime = EVENT_CONTROL_FILTERING_TIME_V2N.get(et)
 		const enableReset = erst === 1
 
 		if(edge === undefined) { throw new Error('unknown edge value') }
+		if(filteringTime === undefined) { throw new Error('unknown filtering value') }
 
 		return {
 			enableCapture,
@@ -621,10 +674,11 @@ export class Converter {
 	static encodeEventControl(eventControl) {
 		const ecp = eventControl.enableCapture ? 1 : 0
 		const ehl = EVENT_CONTROL_EDGE_N2V.get(eventControl.edge)
-		const et = eventControl.filteringTime
+		const et = EVENT_CONTROL_FILTERING_TIME_N2V.get(eventControl.filteringTime)
 		const erst = eventControl.enableReset ? 1 : 0
 
 		if(ehl === undefined) { throw new Error('unknown edge name') }
+		if(et === undefined) { throw new Error('unknown filtering name') }
 
 		const value = BitSmush.smushBits(EVENT_CONTROL_SMUSH_MAP, [ ecp, ehl, et, erst ])
 		return Uint8Array.from([ value ])
