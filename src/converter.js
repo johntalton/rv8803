@@ -13,6 +13,22 @@ import {
 /** @import { Time, Alarm, Offset, Timer, Control, Extension, UpdateSelect, AlarmSelect, Flags, ClearFlags, EventControl, EventEdge, Capture } from './types.js' */
 /** @import { SmushMap } from '@johntalton/bitsmush' */
 
+/**
+ * @template {number} L
+ * @template {number[]} [T=[]]
+ * @typedef {T['length'] extends L ? T : FixedBytes<L, [number, ...T]>} FixedBytes
+ */
+
+/**
+ * @template {number} L
+ * @param {Uint8Array} buf
+ * @param {L} len
+ * @returns {buf is Uint8Array & FixedBytes<L>}
+ */
+export function hasByteLength(buf, len) {
+	return buf.byteLength >= len
+}
+
 export const HUNDREDTHS_PER_MILLISECOND = 10
 
 export const MAX_4_BIT_TIMER_GP = 0x0F
@@ -22,8 +38,6 @@ export const MAX_BCD_8 = 150 + 15
 //
 export const ALARM_WEEKDAY_MASK = 0b0111_1111
 export const ALARM_DATE_MASK = 0b0011_1111
-
-export const ALARM_HOUR_GP0_MASK = 0b0100_0000
 export const ALARM_WEEKDAY_OR_DATE_GP1_MASK = 0b0100_0000
 
 //
@@ -77,7 +91,6 @@ export const EVENT_CONTROL_EDGE_N2V = new Map([
 ])
 /** @type {Map<number, EventEdge>} */
 export const EVENT_CONTROL_EDGE_V2N = new Map(Array.from(EVENT_CONTROL_EDGE_N2V, ([key, value]) => [value, key]))
-
 
 /**
  * @param {number} bcd
@@ -165,21 +178,12 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
-		if(u8.byteLength < HIGH_RES_TIME_BLOCK.length) { throw new RangeError('invalid buffer length') }
+		if(!hasByteLength(u8, HIGH_RES_TIME_BLOCK.length)) { throw new RangeError('invalid buffer length') }
 
 		const [
 			hundredth, second, minute, hour,
 			weekday, date, month, year
 		] = u8
-
-		if(hundredth === undefined) { throw new Error('undefined time value') }
-		if(second === undefined) { throw new Error('undefined time value') }
-		if(minute === undefined) { throw new Error('undefined time value') }
-		if(hour === undefined) { throw new Error('undefined time value') }
-		if(weekday === undefined) { throw new Error('undefined time value') }
-		if(date === undefined) { throw new Error('undefined time value') }
-		if(month === undefined) { throw new Error('undefined time value') }
-		if(year === undefined) { throw new Error('undefined time value') }
 
 		const millisecond = decodeBCD(hundredth) * HUNDREDTHS_PER_MILLISECOND
 
@@ -205,20 +209,12 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
-		if(u8.byteLength < TIME_BLOCK.length) { throw new RangeError('invalid buffer length') }
+		if(!hasByteLength(u8, TIME_BLOCK.length)) { throw new RangeError('invalid buffer length') }
 
 		const [
 			second, minute, hour,
 			weekday, date, month, year
 		] = u8
-
-		if(second === undefined) { throw new Error('undefined time value') }
-		if(minute === undefined) { throw new Error('undefined time value') }
-		if(hour === undefined) { throw new Error('undefined time value') }
-		if(weekday === undefined) { throw new Error('undefined time value') }
-		if(date === undefined) { throw new Error('undefined time value') }
-		if(month === undefined) { throw new Error('undefined time value') }
-		if(year === undefined) { throw new Error('undefined time value') }
 
 		return Temporal.PlainDateTime.from({
 			year: baseYear + decodeBCD(year),
@@ -260,13 +256,9 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
-		if(u8.byteLength < ALARM_BLOCK.length) { throw new RangeError('invalid buffer length') }
+		if(!hasByteLength(u8, ALARM_BLOCK.length)) { throw new RangeError('invalid buffer length') }
 
 		const [ minuteAlarm, hourAlarm, weekdayOrDateAlarm ] = u8
-
-		if(minuteAlarm === undefined) { throw new Error('undefined byte') }
-		if(hourAlarm === undefined) { throw new Error('undefined byte') }
-		if(weekdayOrDateAlarm === undefined) { throw new Error('undefined byte') }
 
 		const minuteMatch = BitSmush.extractBits(minuteAlarm, 7, 1) === 1
 		const minute = decodeBCD(BitSmush.extractBits(minuteAlarm, 6, 7))
@@ -327,8 +319,9 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
+		if(!hasByteLength(u8, 1)) { throw new RangeError('invalid buffer length') }
+
 		const [ value ] = u8
-		if(value === undefined) { throw new Error('undefined value') }
 
 		// todo units 1/(32768*128) = 0.2384 ppm
 		return decodeTwos(value, OFFSET_BIT_WIDTH)
@@ -354,9 +347,9 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
-		const [ value ] = u8
-		if(value === undefined) { throw new Error('undefined value') }
+		if(!hasByteLength(u8, 1)) { throw new RangeError('invalid buffer length') }
 
+		const [ value ] = u8
 		return value
 	}
 
@@ -379,7 +372,7 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
-		if(u8.byteLength < TIMER_BLOCK.length) { throw new RangeError('invalid buffer length') }
+		if(!hasByteLength(u8, TIMER_BLOCK.length)) { throw new RangeError('invalid buffer length') }
 
 		const [ tc0, tc1 ] = u8
 
@@ -395,7 +388,6 @@ export class Converter {
 		return {
 			timer, gp2_5
 		}
-
 	}
 
 	/**
@@ -423,8 +415,9 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
+		if(!hasByteLength(u8, 1)) { throw new RangeError('invalid buffer length') }
+
 		const [ value ] = u8
-		if(value === undefined) { throw new Error('undefined value') }
 
 		const [
 			uie, tie, aie, eie, reset
@@ -453,7 +446,6 @@ export class Converter {
 		const value = BitSmush.smushBits(CONTROL_SMUSH_MAP, [ uie, tie, aie, eie, reset ])
 
 		return Uint8Array.from([ value ])
-
 	}
 
 	/**
@@ -465,8 +457,9 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
+		if(!hasByteLength(u8, 1)) { throw new RangeError('invalid buffer length') }
+
 		const [ value ] = u8
-		if(value === undefined) { throw new Error('undefined value') }
 
 		const [
 			test, wada, usel, te, fd, td
@@ -517,8 +510,9 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
+		if(!hasByteLength(u8, 1)) { throw new RangeError('invalid buffer length') }
+
 		const [ value ] = u8
-		if(value === undefined) { throw new Error('undefined value') }
 
 		const [
 			uf, tf, af, evf, v2f, v1f
@@ -562,8 +556,9 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
+		if(!hasByteLength(u8, 1)) { throw new RangeError('invalid buffer length') }
+
 		const [ value ] = u8
-		if(value === undefined) { throw new Error('undefined value') }
 
 		const [ ecp, ehl, et, erst ] = BitSmush.unSmushBits(EVENT_CONTROL_SMUSH_MAP, value)
 
@@ -612,12 +607,9 @@ export class Converter {
 			new Uint8Array(buffer.buffer, buffer.byteOffset) :
 			new Uint8Array(buffer)
 
-		if(u8.byteLength < CAPTURE_BLOCK.length) { throw new RangeError('invalid buffer length') }
+		if(!hasByteLength(u8, CAPTURE_BLOCK.length)) { throw new RangeError('invalid buffer length') }
 
 		const [ hundredth, seconds ] = u8
-
-		if(hundredth === undefined) { throw new Error('undefined value') }
-		if(seconds === undefined) { throw new Error('undefined value') }
 
 		const milliseconds = decodeBCD(hundredth) * HUNDREDTHS_PER_MILLISECOND
 
