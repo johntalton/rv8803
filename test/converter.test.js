@@ -302,7 +302,7 @@ describe('Converter', () => {
 
 		it('should handle zero', () => {
 			const buffer = Uint8Array.from([
-				0, 0, 0
+				0b1000_0000, 0b1000_0000, 0b1000_0000
 			])
 			const result = Converter.decodeAlarm(buffer, true)
 			Assert.deepEqual(result, {
@@ -318,7 +318,7 @@ describe('Converter', () => {
 
 		it('should handle weekday 1 and 6', () => {
 			const buffer = Uint8Array.from([
-				0, 0, 0b1010_0001
+				0b1000_0000, 0b1000_0000, 0b0010_0001
 			])
 			const result = Converter.decodeAlarm(buffer, true)
 			Assert.deepEqual(result, {
@@ -334,7 +334,7 @@ describe('Converter', () => {
 
 		it('should handle date 21, gp0:1 (ArrayBuffer)', () => {
 			const buffer = Uint8Array.from([
-				0b0000_0010, 0b0100_0000, 0b1100_0000 | encodeBCD(21)
+				0b1000_0010, 0b1100_0000, 0b0100_0000 | encodeBCD(21)
 			])
 			const result = Converter.decodeAlarm(buffer.buffer, false)
 			Assert.deepEqual(result, {
@@ -361,7 +361,7 @@ describe('Converter', () => {
 
 				weekdayMatch: false, weekday: []
 			})
-			Assert.deepEqual(result, Uint8Array.from([ 0, 0, 0 ]))
+			Assert.deepEqual(result, Uint8Array.from([ 0b1000_0000, 0b1000_0000, 0b1000_0000 ]))
 		})
 
 		it('should handle weekends (weekday)', () => {
@@ -377,7 +377,7 @@ describe('Converter', () => {
 					false, false, false, false, false, true, true
 				]
 			})
-			Assert.deepEqual(result, Uint8Array.from([ 0b1000_0000, 0, 0b1110_0000 ]))
+			Assert.deepEqual(result, Uint8Array.from([ 0b0000_0000, 0b1000_0000, 0b0110_0000 ]))
 		})
 
 		it('should handle default (date)', () => {
@@ -391,7 +391,7 @@ describe('Converter', () => {
 				dateMatch: false, date: 0,
 				gp1: 0,
 			})
-			Assert.deepEqual(result, Uint8Array.from([ 0, 0, 0 ]))
+			Assert.deepEqual(result, Uint8Array.from([ 0b1000_0000, 0b1000_0000, 0b1000_0000 ]))
 		})
 
 		it('should handle 30th (date)', () => {
@@ -405,7 +405,7 @@ describe('Converter', () => {
 				dateMatch: true, date: 30,
 				gp1: 1,
 			})
-			Assert.deepEqual(result, Uint8Array.from([ 0, 0b0100_0000, 0b1100_0000 | encodeBCD(30) ]))
+			Assert.deepEqual(result, Uint8Array.from([ 0b1000_0000, 0b1100_0000, 0b0100_0000 | encodeBCD(30) ]))
 		})
 	})
 

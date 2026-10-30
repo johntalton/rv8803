@@ -44,6 +44,7 @@ export const MAX_TIMER = 4095
 export const MIN_TIMER = 0
 
 //
+export const ALARM_MATCH_ACTIVE_LOW = 0
 export const ALARM_WEEKDAY_MASK = 0b0111_1111
 export const ALARM_DATE_MASK = 0b0011_1111
 export const GP_MASK = 0b1
@@ -312,14 +313,14 @@ export class Converter {
 
 		const [ minuteAlarm, hourAlarm, weekdayOrDateAlarm ] = u8
 
-		const minuteMatch = BitSmush.extractBits(minuteAlarm, 7, 1) === 1
+		const minuteMatch = BitSmush.extractBits(minuteAlarm, 7, 1) === ALARM_MATCH_ACTIVE_LOW
 		const minute = decodeBCD(BitSmush.extractBits(minuteAlarm, 6, 7))
 
-		const hourMatch = BitSmush.extractBits(hourAlarm, 7, 1) === 1
+		const hourMatch = BitSmush.extractBits(hourAlarm, 7, 1) === ALARM_MATCH_ACTIVE_LOW
 		const hour = decodeBCD(BitSmush.extractBits(hourAlarm, 5, 6))
 		const gp0 = BitSmush.extractBits(hourAlarm, 6, 1)
 
-		const weekdayOrDateMatch = BitSmush.extractBits(weekdayOrDateAlarm, 7, 1) === 1
+		const weekdayOrDateMatch = BitSmush.extractBits(weekdayOrDateAlarm, 7, 1) === ALARM_MATCH_ACTIVE_LOW
 
 		if(useWeekday) {
 			const weekdayMatch = weekdayOrDateMatch
@@ -362,10 +363,10 @@ export class Converter {
 	 * @returns {I2CBufferSource}
 	 */
 	static encodeAlarm(alarm) {
-		const ae_m = alarm.minuteMatch ? 1 : 0
+		const ae_m = alarm.minuteMatch ? ALARM_MATCH_ACTIVE_LOW : 1
 		const minute = encodeBCD(alarm.minute)
 
-		const ae_h = alarm.hourMatch ? 1 : 0
+		const ae_h = alarm.hourMatch ? ALARM_MATCH_ACTIVE_LOW : 1
 		const hour = encodeBCD(alarm.hour)
 		const gp0 = alarm.gp0 & GP_MASK
 
@@ -373,7 +374,7 @@ export class Converter {
 		const hourAlarm = BitSmush.smushBits(ALARM_HOUR_SMUSH_MAP, [ ae_h, gp0, hour ])
 
 		if(alarm.useWeekday) {
-			const ae_wd = alarm.weekdayMatch ? 1 : 0
+			const ae_wd = alarm.weekdayMatch ? ALARM_MATCH_ACTIVE_LOW : 1
 			const weekday = alarm.weekday.reduce((acc, wd, index) => {
 				if(!wd) { return acc }
 				return acc | encodeOneHot(index + 1)
@@ -382,7 +383,7 @@ export class Converter {
 			return Uint8Array.from([ minuteAlarm, hourAlarm, weekdayAlarm ])
 		}
 
-		const ae_wd = alarm.dateMatch ? 1 : 0
+		const ae_wd = alarm.dateMatch ? ALARM_MATCH_ACTIVE_LOW : 1
 		const dateAlarm = BitSmush.smushBits(ALARM_DATE_SMUSH_MAP, [ ae_wd, (alarm.gp1 & GP_MASK), encodeBCD(alarm.date) ])
 		return Uint8Array.from([ minuteAlarm, hourAlarm, dateAlarm ])
 	}
