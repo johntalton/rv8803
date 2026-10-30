@@ -606,9 +606,9 @@ describe('Converter', () => {
 				test: false,
 				alarmSelect: 'weekday',
 				periodicUpdateSelect: 'second',
-				enablePeriodicTimer: false,
-				outputFrequency: 0,
-				periodicCountdownFrequency: 0
+				enablePeriodicCountdownTimer: false,
+				outputFrequency: '32kHz',
+				periodicCountdownFrequency: '4096Hz'
 			})
 		})
 
@@ -619,9 +619,9 @@ describe('Converter', () => {
 				test: false,
 				alarmSelect: 'date',
 				periodicUpdateSelect: 'minute',
-				enablePeriodicTimer: false,
-				outputFrequency: 1,
-				periodicCountdownFrequency: 2
+				enablePeriodicCountdownTimer: false,
+				outputFrequency: '1024Hz',
+				periodicCountdownFrequency: '1Hz'
 			})
 		})
 
@@ -632,9 +632,9 @@ describe('Converter', () => {
 				test: false,
 				alarmSelect: 'date',
 				periodicUpdateSelect: 'minute',
-				enablePeriodicTimer: false,
-				outputFrequency: 3,
-				periodicCountdownFrequency: 3
+				enablePeriodicCountdownTimer: false,
+				outputFrequency: '32kHz (alt)',
+				periodicCountdownFrequency: '1/60Hz'
 			})
 		})
 	})
@@ -645,9 +645,9 @@ describe('Converter', () => {
 				test: false,
 				alarmSelect: 'weekday',
 				periodicUpdateSelect: 'second',
-				enablePeriodicTimer: false,
-				outputFrequency: 0,
-				periodicCountdownFrequency: 0
+				enablePeriodicCountdownTimer: false,
+				outputFrequency: '32kHz',
+				periodicCountdownFrequency: '4096Hz'
 			})
 			Assert.deepEqual(result, Uint8Array.from([ 0b0000_0000 ]))
 		})
@@ -657,9 +657,9 @@ describe('Converter', () => {
 				test: false,
 				alarmSelect: 'date',
 				periodicUpdateSelect: 'minute',
-				enablePeriodicTimer: false,
-				outputFrequency: 0,
-				periodicCountdownFrequency: 0
+				enablePeriodicCountdownTimer: false,
+				outputFrequency: '32kHz',
+				periodicCountdownFrequency: '4096Hz'
 			})
 			Assert.deepEqual(result, Uint8Array.from([ 0b0110_0000 ]))
 		})
@@ -669,9 +669,9 @@ describe('Converter', () => {
 				test: true,
 				alarmSelect: 'weekday',
 				periodicUpdateSelect: 'second',
-				enablePeriodicTimer: true,
-				outputFrequency: 1,
-				periodicCountdownFrequency: 2
+				enablePeriodicCountdownTimer: true,
+				outputFrequency: '1024Hz',
+				periodicCountdownFrequency: '1Hz'
 			})
 			Assert.deepEqual(result, Uint8Array.from([ 0b1001_0110 ]))
 		})
@@ -763,7 +763,7 @@ describe('Converter', () => {
 			Assert.deepEqual(result, {
 				enableCapture: false,
 				edge: 'low',
-				filteringTime: 0,
+				filteringTime: 'None',
 				enableReset: false
 			})
 		})
@@ -774,7 +774,7 @@ describe('Converter', () => {
 			Assert.deepEqual(result, {
 				enableCapture: false,
 				edge: 'low',
-				filteringTime: 0,
+				filteringTime: 'None',
 				enableReset: false
 			})
 		})
@@ -785,7 +785,7 @@ describe('Converter', () => {
 			Assert.deepEqual(result, {
 				enableCapture: false,
 				edge: 'high',
-				filteringTime: 0,
+				filteringTime: 'None',
 				enableReset: true
 			})
 		})
@@ -796,7 +796,7 @@ describe('Converter', () => {
 			Assert.deepEqual(result, {
 				enableCapture: false,
 				edge: 'low',
-				filteringTime: 3,
+				filteringTime: '125ms',
 				enableReset: true
 			})
 		})
@@ -807,7 +807,7 @@ describe('Converter', () => {
 			Assert.deepEqual(result, {
 				enableCapture: false,
 				edge: 'low',
-				filteringTime: 3,
+				filteringTime: '125ms',
 				enableReset: true
 			})
 		})
@@ -818,7 +818,7 @@ describe('Converter', () => {
 			const result = Converter.encodeEventControl({
 				enableCapture: false,
 				edge: 'low',
-				filteringTime: 0,
+				filteringTime: 'None',
 				enableReset: false
 			})
 			Assert.deepEqual(result, Uint8Array.from([ 0 ]))
@@ -828,7 +828,7 @@ describe('Converter', () => {
 			const result = Converter.encodeEventControl({
 				enableCapture: false,
 				edge: 'high',
-				filteringTime: 3,
+				filteringTime: '125ms',
 				enableReset: true
 			})
 			Assert.deepEqual(result, Uint8Array.from([ 0b0111_0001 ]))

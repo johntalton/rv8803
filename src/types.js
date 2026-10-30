@@ -65,7 +65,7 @@
  * @property {boolean} test
  * @property {AlarmSelect} alarmSelect
  * @property {UpdateSelect} periodicUpdateSelect
- * @property {boolean} enablePeriodicTimer
+ * @property {boolean} enablePeriodicCountdownTimer
  * @property {ClockOutputFrequency} outputFrequency
  * @property {PeriodicClockFrequency} periodicCountdownFrequency
  */

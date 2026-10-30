@@ -68,7 +68,7 @@ export const TIMER_COUNTER_1_GP_MASK = 0xF0
 
 //
 /** @type {SmushMap} */
-export const CONTROL_SMUSH_MAP = [ [ 5,1 ], [ 4,1 ], [ 3,1 ], [ 2,1 ], [ 0,1]]
+export const CONTROL_SMUSH_MAP = [ [ 5,1 ], [ 4,1 ], [ 3,1 ], [ 2,1 ], [ 0,1 ]]
 
 //
 /** @type {SmushMap} */
@@ -557,7 +557,7 @@ export class Converter {
 			test: test === 1,
 			alarmSelect,
 			periodicUpdateSelect,
-			enablePeriodicTimer: te === 1,
+			enablePeriodicCountdownTimer: te === 1,
 			outputFrequency,
 			periodicCountdownFrequency
 		}
@@ -571,7 +571,7 @@ export class Converter {
 		const test = extension.test ? 1 : 0
 		const wada = EXTENSION_ALARM_SELECT_N2V.get(extension.alarmSelect)
 		const usel = EXTENSION_PERIODIC_TIMER_SELECT_N2V.get(extension.periodicUpdateSelect)
-		const te = extension.enablePeriodicTimer ? 1 : 0
+		const te = extension.enablePeriodicCountdownTimer ? 1 : 0
 		const fd = EXTENSION_CLOCK_OUT_FREQUENCY_N2V.get(extension.outputFrequency)
 		const td = EXTENSION_TIMER_FREQUENCY_N2V.get(extension.periodicCountdownFrequency)
 
@@ -620,8 +620,8 @@ export class Converter {
 		const CLEAR = 0
 		const PRESERVE = 1
 
-		const uf = flags.periodicCountdownTimer === true ? CLEAR : PRESERVE
-		const tf = flags.periodicTimeUpdate === true ? CLEAR : PRESERVE
+		const uf = flags.periodicTimeUpdate === true ? CLEAR : PRESERVE
+		const tf = flags.periodicCountdownTimer === true ? CLEAR : PRESERVE
 		const af = flags.alarm === true ? CLEAR : PRESERVE
 		const evf = flags.externalEvent === true ? CLEAR : PRESERVE
 		const v2f = flags.dataLoss === true ? CLEAR : PRESERVE

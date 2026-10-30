@@ -192,7 +192,11 @@ describe('RV8803', () => {
 			const device = new RV8803(bus)
 			await device.setExtension({
 				alarmSelect: 'weekday',
-				periodicUpdateSelect: 'minute'
+				periodicUpdateSelect: 'minute',
+				enablePeriodicCountdownTimer: false,
+				outputFrequency: '1024Hz',
+				periodicCountdownFrequency: '4096Hz',
+				test: false
 			})
 			Assert.equal(mb.lastRegister, 0x0D)
 			Assert.equal(mb.lastBytesLength, 1)
@@ -242,7 +246,10 @@ describe('RV8803', () => {
 			const bus = new I2CAddressedBus(mb, RV8803_DEFAULT_ADDRESS)
 			const device = new RV8803(bus)
 			await device.setEventControl({
-				edge: 'low'
+				edge: 'low',
+				filteringTime: 'None',
+				enableCapture: false,
+				enableReset: false
 			})
 			Assert.equal(mb.lastRegister, 0x2F)
 			Assert.equal(mb.lastBytesLength, 1)
