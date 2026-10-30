@@ -11,7 +11,6 @@ import {
 
 /** @import { I2CBufferSource } from '@johntalton/and-other-delights' */
 /** @import { Time, Alarm, Offset, Timer, Control, Extension, UpdateSelect, AlarmSelect, ClockOutputFrequency, PeriodicClockFrequency, Flags, ClearFlags, EventControl, EventEdge, EventFilteringTime, Capture } from './types.js' */
-/** @import { SmushMap } from '@johntalton/bitsmush' */
 
 /**
  * @template {number} L
@@ -48,14 +47,11 @@ export const MIN_TIMER = 0
 export const ALARM_WEEKDAY_MASK = 0b0111_1111
 export const ALARM_DATE_MASK = 0b0011_1111
 export const GP_MASK = 0b1
-/** @type {SmushMap} */
-export const ALARM_MINUTE_SMUSH_MAP = [ [ 7,1 ], [ 6,7 ] ]
-/** @type {SmushMap} */
-export const ALARM_HOUR_SMUSH_MAP = [ [ 7,1 ], [ 6,1 ], [ 5,6 ] ]
-/** @type {SmushMap} */
-export const ALARM_WEEKDAY_SMUSH_MAP = [ [ 7,1], [ 6,7 ] ]
-/** @type {SmushMap} */
-export const ALARM_DATE_SMUSH_MAP = [ [ 7,1], [ 6,1 ], [ 5,6 ] ]
+
+export const ALARM_MINUTE_SMUSH_MAP = /** @type {const} */ ([ [ 7,1 ], [ 6,7 ] ])
+export const ALARM_HOUR_SMUSH_MAP = /** @type {const} */ ([ [ 7,1 ], [ 6,1 ], [ 5,6 ] ])
+export const ALARM_WEEKDAY_SMUSH_MAP = /** @type {const} */ ([ [ 7,1], [ 6,7 ] ])
+export const ALARM_DATE_SMUSH_MAP = /** @type {const} */ ([ [ 7,1], [ 6,1 ], [ 5,6 ] ])
 
 
 //
@@ -67,12 +63,10 @@ export const TIMER_COUNTER_1_UPPER_MASK = 0x0F
 export const TIMER_COUNTER_1_GP_MASK = 0xF0
 
 //
-/** @type {SmushMap} */
-export const CONTROL_SMUSH_MAP = [ [ 5,1 ], [ 4,1 ], [ 3,1 ], [ 2,1 ], [ 0,1 ]]
+export const CONTROL_SMUSH_MAP = /** @type {const} */ ([ [ 5,1 ], [ 4,1 ], [ 3,1 ], [ 2,1 ], [ 0,1 ]])
 
 //
-/** @type {SmushMap} */
-export const EXTENSION_SMUSH_MAP = [ [ 7,1 ], [ 6,1 ], [ 5,1 ], [ 4,1 ], [ 3,2 ], [ 1,2 ] ]
+export const EXTENSION_SMUSH_MAP = /** @type {const} */ ([ [ 7,1 ], [ 6,1 ], [ 5,1 ], [ 4,1 ], [ 3,2 ], [ 1,2 ] ])
 export const EXTENSION_PT_SELECT_SECOND = 'second'
 export const EXTENSION_PT_SELECT_MINUTE = 'minute'
 
@@ -120,12 +114,11 @@ export const EXTENSION_TIMER_FREQUENCY_V2N = new Map(Array.from(EXTENSION_TIMER_
 
 
 //
-/** @type {SmushMap} */
-export const FLAGS_SMUSH_MAP = [ [ 5,1 ], [ 4,1 ], [ 3,1 ], [ 2,1 ], [ 1,1 ], [ 0,1 ] ]
+
+export const FLAGS_SMUSH_MAP = /** @type {const} */ ([ [ 5,1 ], [ 4,1 ], [ 3,1 ], [ 2,1 ], [ 1,1 ], [ 0,1 ] ])
 
 //
-/** @type {SmushMap} */
-export const EVENT_CONTROL_SMUSH_MAP = [ [ 7,1 ], [ 6,1 ], [ 5,2 ], [ 0,1 ] ]
+export const EVENT_CONTROL_SMUSH_MAP = /** @type {const} */ ([ [ 7,1 ], [ 6,1 ], [ 5,2 ], [ 0,1 ] ])
 export const EVENT_CONTROL_EDGE_LOW = 'low'
 export const EVENT_CONTROL_EDGE_HIGH = 'high'
 
@@ -376,17 +369,22 @@ export class Converter {
 		const hour = encodeBCD(alarm.hour)
 		const gp0 = alarm.gp0 & GP_MASK
 
-		const ae_wd = (alarm.useWeekday ? alarm.weekdayMatch : alarm.dateMatch) ? 1 : 0
-
-		const weekday = 0 // TODO !!
-
 		const minuteAlarm = BitSmush.smushBits(ALARM_MINUTE_SMUSH_MAP, [ ae_m, minute ])
 		const hourAlarm = BitSmush.smushBits(ALARM_HOUR_SMUSH_MAP, [ ae_h, gp0, hour ])
-		const weekdayOrDateAlarm = alarm.useWeekday ?
-			BitSmush.smushBits(ALARM_WEEKDAY_SMUSH_MAP, [ ae_wd, weekday ]) :
-			BitSmush.smushBits(ALARM_DATE_SMUSH_MAP, [ ae_wd, (alarm.gp1 & GP_MASK), encodeBCD(alarm.date) ])
 
-		return Uint8Array.from([ minuteAlarm ,hourAlarm, weekdayOrDateAlarm ])
+		if(alarm.useWeekday) {
+			const ae_wd = alarm.weekdayMatch ? 1 : 0
+			const weekday = alarm.weekday.reduce((acc, wd, index) => {
+				if(!wd) { return acc }
+				return acc | encodeOneHot(index + 1)
+			}, 0)
+			const weekdayAlarm = BitSmush.smushBits(ALARM_WEEKDAY_SMUSH_MAP, [ ae_wd, weekday ])
+			return Uint8Array.from([ minuteAlarm, hourAlarm, weekdayAlarm ])
+		}
+
+		const ae_wd = alarm.dateMatch ? 1 : 0
+		const dateAlarm = BitSmush.smushBits(ALARM_DATE_SMUSH_MAP, [ ae_wd, (alarm.gp1 & GP_MASK), encodeBCD(alarm.date) ])
+		return Uint8Array.from([ minuteAlarm, hourAlarm, dateAlarm ])
 	}
 
 	/**
@@ -645,11 +643,6 @@ export class Converter {
 		const [ value ] = u8
 
 		const [ ecp, ehl, et, erst ] = BitSmush.unSmushBits(EVENT_CONTROL_SMUSH_MAP, value)
-
-		if(ecp === undefined) { throw new Error('undefined value') }
-		if(ehl === undefined) { throw new Error('undefined value') }
-		if(et === undefined) { throw new Error('undefined value') }
-		if(erst === undefined) { throw new Error('undefined value') }
 
 		const enableCapture = ecp === 1
 		const edge = EVENT_CONTROL_EDGE_V2N.get(ehl)

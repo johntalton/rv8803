@@ -24,6 +24,10 @@ describe('decodeBCD', () => {
 })
 
 describe('encodeBCD', () => {
+	it('should handle negative', () => {
+		Assert.throws(() => encodeBCD(-1))
+	})
+
 	it('should handle zero', () => {
 		const result = encodeBCD(0)
 		Assert.equal(result, 0)
@@ -50,6 +54,13 @@ describe('decodeOneHot', () => {
 	it('should handle zero', () => {
 		Assert.throws(() => decodeOneHot(0), {
 			message: 'one-hot zero invalid',
+			name: 'Error'
+		})
+	})
+
+	it('should handle non-one-hot', () => {
+		Assert.throws(() => decodeOneHot(0b0001_0001), {
+			message: 'not one-hot value',
 			name: 'Error'
 		})
 	})
@@ -353,6 +364,22 @@ describe('Converter', () => {
 			Assert.deepEqual(result, Uint8Array.from([ 0, 0, 0 ]))
 		})
 
+		it('should handle weekends (weekday)', () => {
+			const result = Converter.encodeAlarm({
+				useWeekday: true,
+
+				minuteMatch: true, minute: 0,
+				hourMatch: false, hour: 0,
+				gp0: 0,
+
+				weekdayMatch: true, weekday: [
+					//  m      t      w      t      f     s     s
+					false, false, false, false, false, true, true
+				]
+			})
+			Assert.deepEqual(result, Uint8Array.from([ 0b1000_0000, 0, 0b1110_0000 ]))
+		})
+
 		it('should handle default (date)', () => {
 			const result = Converter.encodeAlarm({
 				useWeekday: false,
@@ -365,6 +392,20 @@ describe('Converter', () => {
 				gp1: 0,
 			})
 			Assert.deepEqual(result, Uint8Array.from([ 0, 0, 0 ]))
+		})
+
+		it('should handle 30th (date)', () => {
+			const result = Converter.encodeAlarm({
+				useWeekday: false,
+
+				minuteMatch: false, minute: 0,
+				hourMatch: false, hour: 0,
+				gp0: 1,
+
+				dateMatch: true, date: 30,
+				gp1: 1,
+			})
+			Assert.deepEqual(result, Uint8Array.from([ 0, 0b0100_0000, 0b1100_0000 | encodeBCD(30) ]))
 		})
 	})
 
@@ -406,8 +447,15 @@ describe('Converter', () => {
 			Assert.deepEqual(result, Uint8Array.from([ 0b0010_1100 ]))
 		})
 
-		it('should handle -64 (out of bounds)', () => {
-			Assert.throws(() => Converter.encodeOffset(-64), {
+		it('should handle -64 (out of bounds min)', () => {
+			Assert.throws(() => Converter.encodeOffset(-42), {
+				message: 'offset out of bounds',
+				name: 'RangeError'
+			})
+		})
+
+		it('should handle -64 (out of bounds max)', () => {
+			Assert.throws(() => Converter.encodeOffset(42), {
 				message: 'offset out of bounds',
 				name: 'RangeError'
 			})
@@ -436,7 +484,14 @@ describe('Converter', () => {
 	})
 
 	describe('encodeRAM', () => {
-		it('should handle out of range', () => {
+		it('should handle out of range (min)', () => {
+			Assert.throws(() => Converter.encodeRAM(-42), {
+				message: 'ram overflow',
+				name: 'RangeError'
+			})
+		})
+
+		it('should handle out of range (max)', () => {
 			Assert.throws(() => Converter.encodeRAM(1977), {
 				message: 'ram overflow',
 				name: 'RangeError'
@@ -487,6 +542,26 @@ describe('Converter', () => {
 	})
 
 	describe('encodeTimer', () => {
+		it('should handle out of bounds min', () => {
+			Assert.throws(() => Converter.encodeTimer({
+				timer: -42,
+				gp2_5: 0
+			}), {
+				message: 'timer out of bounds',
+				name: 'RangeError'
+			})
+		})
+
+		it('should handle out of bounds max', () => {
+			Assert.throws(() => Converter.encodeTimer({
+				timer: 5000,
+				gp2_5: 0
+			}), {
+				message: 'timer out of bounds',
+				name: 'RangeError'
+			})
+		})
+
 		it('should handle basics', () => {
 			const result = Converter.encodeTimer({
 				timer: 0,
